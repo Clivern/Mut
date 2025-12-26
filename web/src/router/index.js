@@ -1,104 +1,100 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import Login from '@/views/Login.vue'
-import Dashboard from '@/views/Dashboard.vue'
-import Setup from '@/views/Setup.vue'
-import Settings from '@/views/Settings.vue'
-import Gateways from '@/views/Gateways.vue'
-import Users from '@/views/Users.vue'
-import Servers from '@/views/Servers.vue'
-import Tools from '@/views/Tools.vue'
-import Mcps from '@/views/Mcps.vue'
+import { loadUserFromStorage } from '@/utils/storage'
 
 const routes = [
   {
-    path: '/setup',
-    name: 'Setup',
-    component: Setup,
-    meta: { requiresGuest: true }
+    path: '/',
+    redirect: '/login',
   },
   {
     path: '/login',
     name: 'Login',
-    component: Login,
-    meta: { requiresGuest: true }
+    component: () => import('@/views/Login.vue'),
+    meta: { requiresGuest: true, title: 'Login', description: 'Login to platform' }
+  },
+  {
+    path: '/setup',
+    name: 'Setup',
+    component: () => import('@/views/Setup.vue'),
+    meta: { requiresGuest: true, title: 'Setup', description: 'Setup platform' }
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: Dashboard,
-    meta: { requiresAuth: true }
+    component: () => import('@/views/Dashboard.vue'),
+    meta: { requiresAuth: true, title: 'Dashboard', description: 'Platform dashboard' }
   },
   {
-    path: '/gateways',
-    name: 'Gateways',
-    component: Gateways,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/mcps',
-    name: 'Mcps',
-    component: Mcps,
-    meta: { requiresAuth: true }
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/Profile.vue'),
+    meta: { requiresAuth: true, title: 'Profile', description: 'Your account profile' }
   },
   {
     path: '/users',
     name: 'Users',
-    component: Users,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/servers',
-    name: 'Servers',
-    component: Servers,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/tools',
-    name: 'Tools',
-    component: Tools,
-    meta: { requiresAuth: true }
+    component: () => import('@/views/Users.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Users', description: 'Platform users' }
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: Settings,
-    meta: { requiresAuth: true }
+    component: () => import('@/views/Settings.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Settings', description: 'Settings' }
+  },
+  {
+    path: '/404',
+    name: 'NotFound',
+    component: () => import('@/views/NotFound.vue'),
+    meta: { title: 'Page not found' }
+  },
+  {
+    path: '/500',
+    name: 'ServerError',
+    component: () => import('@/views/ServerError.vue'),
+    meta: { title: 'Server error' }
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/login'
+    name: 'NotFoundCatchAll',
+    component: () => import('@/views/NotFound.vue'),
+    meta: { title: 'Page not found' }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, _from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    if (to.hash) {
+      return { el: to.hash, behavior: 'smooth' }
+    }
+    return { top: 0 }
+  },
 })
 
-// Navigation guard for authentication and setup
-router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
+function isSafeRedirect(redirect) {
+  return typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
+}
 
-  // Wait for auth initialization to complete before making decisions
-  // This prevents redirects during the initial auth check on page refresh
-  while (authStore.isInitializing) {
-    await new Promise(resolve => setTimeout(resolve, 50))
-  }
-
-  const isAuthenticated = authStore.isAuthenticated
-
-  // Check if setup is completed (you can implement this check via API)
-  // For now, we'll allow access to setup page if not authenticated
+// Navigation guard - reads auth state directly from storage
+router.beforeEach((to) => {
+  const currentUser = loadUserFromStorage()
+  const isAuthenticated = !!currentUser
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
-  } else if (to.meta.requiresGuest && isAuthenticated) {
-    next('/dashboard')
-  } else {
-    next()
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.requiresGuest && isAuthenticated) {
+    const redirect = to.query.redirect
+    return isSafeRedirect(redirect) ? redirect : '/dashboard'
+  }
+  if (to.meta.requiresAdmin && currentUser?.role !== 'admin') {
+    return '/404'
   }
 })
 
 export default router
-
