@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: mut
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d mut"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      MUT_DATABASE_DRIVER: postgres
+      MUT_DATABASE_HOST: localhost
+      MUT_DATABASE_PORT: 5432
+      MUT_DATABASE_USERNAME: postgres
+      MUT_DATABASE_PASSWORD: postgres
+      MUT_DATABASE_NAME: mut
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.27.3"]
+    name: Go ${{ matrix.go }} run
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Get dependencies
+        run: |
+          export PATH=${PATH}:`go env GOPATH`/bin
+          make revive
+
+      - name: Run make ci
+        run: |
+          export CGO_CFLAGS="-g -O2 -Wno-return-local-addr"
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go get -t .
+          make ci
+          make integration
+          git status
+          git diff > diff.log
+          cat diff.log
+          git clean -fd
+          git reset --hard
+          make verify
