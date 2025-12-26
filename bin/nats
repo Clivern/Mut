@@ -1,0 +1,469 @@
+#!/usr/bin/env python3
+"""Run a local NATS server with Apple Container.
+
+Basic usage:
+  ./bin/nats start
+  ./bin/nats credentials
+  ./bin/nats status
+  ./bin/nats logs
+  ./bin/nats stop
+  ./bin/nats restart
+  ./bin/nats health
+  ./bin/nats stats
+  ./bin/nats remove
+  ./bin/nats remove --with-volume
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+
+DEFAULT_IMAGE = "docker.io/library/nats:2"
+DEFAULT_CONTAINER = "mut-nats"
+DEFAULT_VOLUME = "mut-nats-data"
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_CLIENT_PORT = 4222
+DEFAULT_MONITOR_PORT = 8222
+DEFAULT_NAME = "mut"
+DEFAULT_QUEUE = "mut"
+DEFAULT_DATA_MOUNT = "/data"
+
+MONITOR_ENDPOINTS = (
+    "healthz",
+    "varz",
+    "connz",
+    "subsz",
+    "jsz?streams=true&consumers=true",
+    "routez",
+    "gatewayz",
+    "leafz",
+    "accountz",
+    "accstatz",
+)
+
+HELP_TEXT = f"""examples:
+  ./bin/nats start
+  ./bin/nats credentials
+  ./bin/nats status
+  ./bin/nats logs
+  ./bin/nats stop
+  ./bin/nats restart
+  ./bin/nats health
+  ./bin/nats stats
+  ./bin/nats remove
+  ./bin/nats remove --with-volume
+
+default app environment:
+  export MUT_BROKER_URL=nats://{DEFAULT_HOST}:{DEFAULT_CLIENT_PORT}
+  export MUT_BROKER_NAME={DEFAULT_NAME}
+  export MUT_BROKER_QUEUE={DEFAULT_QUEUE}
+"""
+
+
+@dataclass(frozen=True)
+class NatsConfig:
+    image: str
+    container: str
+    volume: str
+    host: str
+    client_port: int
+    monitor_port: int
+    name: str
+    queue: str
+
+
+def run_container(
+    *args: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
+    if shutil.which("container") is None:
+        print("container CLI is required but was not found in PATH", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        return subprocess.run(
+            ["container", *args],
+            check=check,
+            capture_output=capture,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        if exc.stderr:
+            print(exc.stderr.strip(), file=sys.stderr)
+        raise SystemExit(exc.returncode)
+
+
+def ensure_ready() -> None:
+    result = subprocess.run(
+        ["container", "system", "status", "--format", "json"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print("container system is not running; run: container system start", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        status = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        print("container system is not running; run: container system start", file=sys.stderr)
+        raise SystemExit(1)
+
+    if status.get("status") != "running":
+        print("container system is not running; run: container system start", file=sys.stderr)
+        raise SystemExit(1)
+
+    app_root = status.get("appRoot", "")
+    kernels_dir = Path(app_root) / "kernels"
+    if app_root and kernels_dir.is_dir() and not any(kernels_dir.iterdir()):
+        print("Installing recommended container kernel...", file=sys.stderr)
+        kernel = subprocess.run(
+            ["container", "system", "kernel", "set", "--recommended"],
+            text=True,
+        )
+        if kernel.returncode != 0:
+            print("Run: container system kernel set --recommended", file=sys.stderr)
+            raise SystemExit(kernel.returncode)
+
+
+def inspect_container(name: str) -> dict | None:
+    result = run_container("inspect", name, check=False, capture=True)
+    if result.returncode != 0:
+        return None
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(data, list):
+        return data[0] if data else None
+    return data
+
+
+def container_state(info: dict) -> str:
+    status = info.get("status", "?")
+    if isinstance(status, dict):
+        return str(status.get("state", "?"))
+    return str(status)
+
+
+def container_exists(name: str) -> bool:
+    return inspect_container(name) is not None
+
+
+def container_is_running(name: str) -> bool:
+    info = inspect_container(name)
+    return info is not None and container_state(info) == "running"
+
+
+def credentials(cfg: NatsConfig) -> str:
+    return f"""NATS credentials
+Container:  {cfg.container}
+Image:      {cfg.image}
+Client URL: nats://{cfg.host}:{cfg.client_port}
+Monitor:    http://{cfg.host}:{cfg.monitor_port}
+
+App environment:
+export MUT_BROKER_URL=nats://{cfg.host}:{cfg.client_port}
+export MUT_BROKER_NAME={cfg.name}
+export MUT_BROKER_QUEUE={cfg.queue}
+"""
+
+
+def start(cfg: NatsConfig, pull: bool) -> None:
+    ensure_ready()
+    if pull:
+        run_container("image", "pull", cfg.image)
+
+    if container_exists(cfg.container):
+        if container_is_running(cfg.container):
+            print(f"{cfg.container} is already running")
+        else:
+            run_container("start", cfg.container)
+            print(f"started existing container {cfg.container}")
+        print()
+        print(credentials(cfg))
+        return
+
+    run_container(
+        "run",
+        "-d",
+        "--name",
+        cfg.container,
+        "-p",
+        f"{cfg.client_port}:4222",
+        "-p",
+        f"{cfg.monitor_port}:8222",
+        "-v",
+        f"{cfg.volume}:{DEFAULT_DATA_MOUNT}",
+        cfg.image,
+        "--jetstream",
+        f"--store_dir={DEFAULT_DATA_MOUNT}",
+        "--http_port=8222",
+    )
+    print(f"created and started container {cfg.container}")
+    print()
+    print(credentials(cfg))
+
+
+def stop(cfg: NatsConfig) -> None:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        print(f"{cfg.container} does not exist")
+        return
+    if not container_is_running(cfg.container):
+        print(f"{cfg.container} is already stopped")
+        return
+    run_container("stop", cfg.container)
+    print(f"stopped {cfg.container}")
+
+
+def restart(cfg: NatsConfig) -> None:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        start(cfg, pull=False)
+        return
+    if container_is_running(cfg.container):
+        run_container("stop", cfg.container)
+    run_container("start", cfg.container)
+    print(f"restarted {cfg.container}")
+    print()
+    print(credentials(cfg))
+
+
+def remove(cfg: NatsConfig, volume: bool) -> None:
+    ensure_ready()
+    if container_exists(cfg.container):
+        run_container("delete", "--force", cfg.container)
+        print(f"removed container {cfg.container}")
+    else:
+        print(f"{cfg.container} does not exist")
+
+    if volume:
+        result = run_container(
+            "volume", "delete", cfg.volume, check=False, capture=True
+        )
+        if result.returncode == 0:
+            print(f"removed volume {cfg.volume}")
+        else:
+            print(f"volume {cfg.volume} does not exist or could not be removed")
+
+
+def status(cfg: NatsConfig) -> None:
+    ensure_ready()
+    info = inspect_container(cfg.container)
+    if info is None:
+        print(f"{cfg.container} does not exist")
+        return
+    print(f"{cfg.container}: {container_state(info)}")
+
+
+def logs(cfg: NatsConfig, follow: bool) -> None:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        print(f"{cfg.container} does not exist")
+        return
+
+    args = ["logs"]
+    if follow:
+        args.append("--follow")
+    args.append(cfg.container)
+    run_container(*args)
+
+
+def require_monitor(cfg: NatsConfig) -> bool:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        print(f"{cfg.container} does not exist")
+        return False
+    if not container_is_running(cfg.container):
+        print(f"{cfg.container} is not running")
+        return False
+    if shutil.which("curl") is None:
+        print("curl is required but was not found in PATH", file=sys.stderr)
+        raise SystemExit(1)
+    return True
+
+
+def fetch_monitor(cfg: NatsConfig, path: str) -> str:
+    url = f"http://{cfg.host}:{cfg.monitor_port}/{path}"
+    result = subprocess.run(
+        ["curl", "--fail", "--silent", "--show-error", url],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(f"{path.split('?', 1)[0]}: unavailable", file=sys.stderr)
+        if result.stderr:
+            print(result.stderr.strip(), file=sys.stderr)
+        raise SystemExit(1)
+    return result.stdout.strip()
+
+
+def health(cfg: NatsConfig) -> None:
+    if not require_monitor(cfg):
+        return
+    print(f"healthz: {fetch_monitor(cfg, 'healthz') or 'ok'}")
+
+
+def stats(cfg: NatsConfig) -> None:
+    if not require_monitor(cfg):
+        return
+    sections: list[str] = []
+    for path in MONITOR_ENDPOINTS:
+        name = path.split("?", 1)[0]
+        payload = json.loads(fetch_monitor(cfg, path))
+        sections.append(f"=== {name} ===\n{json.dumps(payload, indent=2)}")
+    print("\n\n".join(sections))
+
+
+def add_common_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--image",
+        default=DEFAULT_IMAGE,
+        help=f"NATS image (default: {DEFAULT_IMAGE})",
+    )
+    parser.add_argument(
+        "--container",
+        default=DEFAULT_CONTAINER,
+        help=f"Container name (default: {DEFAULT_CONTAINER})",
+    )
+    parser.add_argument(
+        "--volume",
+        default=DEFAULT_VOLUME,
+        help=f"Container volume name (default: {DEFAULT_VOLUME})",
+    )
+    parser.add_argument(
+        "--host",
+        default=DEFAULT_HOST,
+        help=f"Host shown in app credentials (default: {DEFAULT_HOST})",
+    )
+    parser.add_argument(
+        "--client-port",
+        type=int,
+        default=DEFAULT_CLIENT_PORT,
+        help=f"Client host port (default: {DEFAULT_CLIENT_PORT})",
+    )
+    parser.add_argument(
+        "--monitor-port",
+        type=int,
+        default=DEFAULT_MONITOR_PORT,
+        help=f"HTTP monitoring host port (default: {DEFAULT_MONITOR_PORT})",
+    )
+    parser.add_argument(
+        "--name",
+        default=DEFAULT_NAME,
+        help=f"Client connection name for app config (default: {DEFAULT_NAME})",
+    )
+    parser.add_argument(
+        "--queue",
+        default=DEFAULT_QUEUE,
+        help=f"Consumer queue group for app config (default: {DEFAULT_QUEUE})",
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    common_parser = argparse.ArgumentParser(add_help=False)
+    add_common_options(common_parser)
+
+    parser = argparse.ArgumentParser(
+        description="Run a local NATS server for mut with Apple Container.",
+        epilog=HELP_TEXT,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    add_common_options(parser)
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    start_parser = subparsers.add_parser(
+        "start",
+        parents=[common_parser],
+        help="Create or start the NATS container",
+    )
+    start_parser.add_argument(
+        "--pull", action="store_true", help="Pull the image before starting"
+    )
+
+    subparsers.add_parser(
+        "stop", parents=[common_parser], help="Stop the NATS container"
+    )
+    subparsers.add_parser(
+        "restart", parents=[common_parser], help="Restart the NATS container"
+    )
+    subparsers.add_parser(
+        "status", parents=[common_parser], help="Show container status"
+    )
+    subparsers.add_parser(
+        "credentials", parents=[common_parser], help="Print app NATS credentials"
+    )
+    subparsers.add_parser(
+        "health", parents=[common_parser], help="Check NATS health endpoint"
+    )
+    subparsers.add_parser(
+        "stats", parents=[common_parser], help="Print NATS monitoring stats"
+    )
+
+    logs_parser = subparsers.add_parser(
+        "logs", parents=[common_parser], help="Show NATS container logs"
+    )
+    logs_parser.add_argument("-f", "--follow", action="store_true", help="Follow logs")
+
+    remove_parser = subparsers.add_parser(
+        "remove", parents=[common_parser], help="Remove the NATS container"
+    )
+    remove_parser.add_argument(
+        "--with-volume", action="store_true", help="Also remove the container volume"
+    )
+
+    return parser
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+
+    cfg = NatsConfig(
+        image=args.image,
+        container=args.container,
+        volume=args.volume if isinstance(args.volume, str) else DEFAULT_VOLUME,
+        host=args.host,
+        client_port=args.client_port,
+        monitor_port=args.monitor_port,
+        name=args.name,
+        queue=args.queue,
+    )
+
+    command = args.command or "start"
+
+    if command == "start":
+        start(cfg, pull=getattr(args, "pull", False))
+    elif command == "stop":
+        stop(cfg)
+    elif command == "restart":
+        restart(cfg)
+    elif command == "status":
+        status(cfg)
+    elif command == "credentials":
+        print(credentials(cfg))
+    elif command == "logs":
+        logs(cfg, follow=getattr(args, "follow", False))
+    elif command == "remove":
+        remove(cfg, volume=getattr(args, "with_volume", False))
+    elif command == "health":
+        health(cfg)
+    elif command == "stats":
+        stats(cfg)
+    else:
+        parser.error(f"unknown command: {command}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

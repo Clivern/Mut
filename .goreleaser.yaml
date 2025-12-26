@@ -1,26 +1,34 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
 version: 2
+
+project_name: mut
+
 before:
   hooks:
-    - "go mod download"
-    - "go mod tidy"
-    - "go generate ./..."
+    - go mod download
+
 builds:
   - id: mut
+    main: .
     env:
       - CGO_ENABLED=0
-    goarch:
-      - amd64
     goos:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+    flags:
+      - -trimpath
 
 archives:
   - formats:
       - tar.gz
-    # this name template makes the OS and Arch compatible with the results of uname.
     name_template: >-
       {{ .ProjectName }}_
       {{- .Os }}_
@@ -28,23 +36,21 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
     format_overrides:
-    - goos: windows
-      formats:
-        - zip
+      - goos: windows
+        formats:
+          - zip
     files:
       - LICENSE
       - README.md
       - config.dist.yml
-      - config.prod.yml
+
 checksum:
-  name_template: 'checksums.txt'
-snapshot:
+  name_template: checksums.txt
+
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
-project_name: mut
+      - "^docs:"
+      - "^test:"

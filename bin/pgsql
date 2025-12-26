@@ -1,0 +1,523 @@
+#!/usr/bin/env python3
+"""Run a local PostgreSQL database with Apple Container.
+
+Basic usage:
+  ./bin/pgsql start
+  ./bin/pgsql credentials
+  ./bin/pgsql status
+  ./bin/pgsql logs
+  ./bin/pgsql stop
+  ./bin/pgsql restart
+  ./bin/pgsql psql
+  ./bin/pgsql psql -c "SELECT * FROM users"
+  ./bin/pgsql tables
+  ./bin/pgsql users
+  ./bin/pgsql async_tasks
+  ./bin/pgsql <table>
+  ./bin/pgsql remove
+  ./bin/pgsql remove --with-volume
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+
+DEFAULT_IMAGE = "docker.io/library/postgres:16-alpine"
+DEFAULT_CONTAINER = "mut-postgres"
+DEFAULT_VOLUME = "mut-postgres-data"
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_HOST_PORT = 5433
+DEFAULT_CONTAINER_PORT = 5432
+DEFAULT_USER = "postgres"
+DEFAULT_PASSWORD = "postgres"
+DEFAULT_DATABASE = "mut"
+DEFAULT_DATA_MOUNT = "/var/lib/postgresql"
+DEFAULT_PGDATA = f"{DEFAULT_DATA_MOUNT}/pgdata"
+
+INFRA_COMMANDS = frozenset({
+    "start",
+    "stop",
+    "restart",
+    "status",
+    "credentials",
+    "psql",
+    "tables",
+    "logs",
+    "remove",
+})
+
+TABLE_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
+
+HELP_TEXT = f"""examples:
+  ./bin/pgsql start
+  ./bin/pgsql credentials
+  ./bin/pgsql status
+  ./bin/pgsql logs
+  ./bin/pgsql stop
+  ./bin/pgsql restart
+  ./bin/pgsql psql                                  # interactive shell
+  ./bin/pgsql psql -c "SELECT * FROM users"    # one-off query
+  ./bin/pgsql tables                                # list tables
+  ./bin/pgsql users                                 # SELECT * FROM users (-x)
+  ./bin/pgsql async_tasks                           # SELECT * FROM async_tasks (-x)
+  ./bin/pgsql <table>                               # any public table (-x)
+  ./bin/pgsql remove
+  ./bin/pgsql remove --with-volume
+
+default app environment:
+  export MUT_DATABASE_DRIVER=postgres
+  export MUT_DATABASE_HOST={DEFAULT_HOST}
+  export MUT_DATABASE_PORT={DEFAULT_HOST_PORT}
+  export MUT_DATABASE_USERNAME={DEFAULT_USER}
+  export MUT_DATABASE_PASSWORD={DEFAULT_PASSWORD}
+  export MUT_DATABASE_NAME={DEFAULT_DATABASE}
+"""
+
+
+@dataclass(frozen=True)
+class PgConfig:
+    image: str
+    container: str
+    volume: str
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str
+
+
+def run_container(
+    *args: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess[str]:
+    if shutil.which("container") is None:
+        print("container CLI is required but was not found in PATH", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        return subprocess.run(
+            ["container", *args],
+            check=check,
+            capture_output=capture,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        if exc.stderr:
+            print(exc.stderr.strip(), file=sys.stderr)
+        raise SystemExit(exc.returncode)
+
+
+def ensure_ready() -> None:
+    result = subprocess.run(
+        ["container", "system", "status", "--format", "json"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print("container system is not running; run: container system start", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        status = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        print("container system is not running; run: container system start", file=sys.stderr)
+        raise SystemExit(1)
+
+    if status.get("status") != "running":
+        print("container system is not running; run: container system start", file=sys.stderr)
+        raise SystemExit(1)
+
+    app_root = status.get("appRoot", "")
+    kernels_dir = Path(app_root) / "kernels"
+    if app_root and kernels_dir.is_dir() and not any(kernels_dir.iterdir()):
+        print("Installing recommended container kernel...", file=sys.stderr)
+        kernel = subprocess.run(
+            ["container", "system", "kernel", "set", "--recommended"],
+            text=True,
+        )
+        if kernel.returncode != 0:
+            print("Run: container system kernel set --recommended", file=sys.stderr)
+            raise SystemExit(kernel.returncode)
+
+
+def inspect_container(name: str) -> dict | None:
+    result = run_container("inspect", name, check=False, capture=True)
+    if result.returncode != 0:
+        return None
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(data, list):
+        return data[0] if data else None
+    return data
+
+
+def container_state(info: dict) -> str:
+    status = info.get("status", "?")
+    if isinstance(status, dict):
+        return str(status.get("state", "?"))
+    return str(status)
+
+
+def container_exists(name: str) -> bool:
+    return inspect_container(name) is not None
+
+
+def container_is_running(name: str) -> bool:
+    info = inspect_container(name)
+    return info is not None and container_state(info) == "running"
+
+
+def credentials(cfg: PgConfig) -> str:
+    dsn = f"postgresql://{cfg.user}:{cfg.password}@{cfg.host}:{cfg.port}/{cfg.database}?sslmode=disable"
+    return f"""PostgreSQL credentials
+Container: {cfg.container}
+Image:     {cfg.image}
+DSN:       {dsn}
+
+App environment:
+export MUT_DATABASE_DRIVER=postgres
+export MUT_DATABASE_HOST={cfg.host}
+export MUT_DATABASE_PORT={cfg.port}
+export MUT_DATABASE_USERNAME={cfg.user}
+export MUT_DATABASE_PASSWORD={cfg.password}
+export MUT_DATABASE_NAME={cfg.database}
+"""
+
+
+def start(cfg: PgConfig, pull: bool) -> None:
+    ensure_ready()
+    if pull:
+        run_container("image", "pull", cfg.image)
+
+    if container_exists(cfg.container):
+        if container_is_running(cfg.container):
+            print(f"{cfg.container} is already running")
+        else:
+            run_container("start", cfg.container)
+            print(f"started existing container {cfg.container}")
+        print()
+        print(credentials(cfg))
+        return
+
+    run_container(
+        "run",
+        "-d",
+        "--name",
+        cfg.container,
+        "-e",
+        f"POSTGRES_USER={cfg.user}",
+        "-e",
+        f"POSTGRES_PASSWORD={cfg.password}",
+        "-e",
+        f"POSTGRES_DB={cfg.database}",
+        "-e",
+        f"PGDATA={DEFAULT_PGDATA}",
+        "-p",
+        f"{cfg.port}:{DEFAULT_CONTAINER_PORT}",
+        "-v",
+        f"{cfg.volume}:{DEFAULT_DATA_MOUNT}",
+        cfg.image,
+    )
+    print(f"created and started container {cfg.container}")
+    print()
+    print(credentials(cfg))
+
+
+def stop(cfg: PgConfig) -> None:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        print(f"{cfg.container} does not exist")
+        return
+    if not container_is_running(cfg.container):
+        print(f"{cfg.container} is already stopped")
+        return
+    run_container("stop", cfg.container)
+    print(f"stopped {cfg.container}")
+
+
+def restart(cfg: PgConfig) -> None:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        start(cfg, pull=False)
+        return
+    if container_is_running(cfg.container):
+        run_container("stop", cfg.container)
+    run_container("start", cfg.container)
+    print(f"restarted {cfg.container}")
+    print()
+    print(credentials(cfg))
+
+
+def remove(cfg: PgConfig, volume: bool) -> None:
+    ensure_ready()
+    if container_exists(cfg.container):
+        run_container("delete", "--force", cfg.container)
+        print(f"removed container {cfg.container}")
+    else:
+        print(f"{cfg.container} does not exist")
+
+    if volume:
+        result = run_container(
+            "volume", "delete", cfg.volume, check=False, capture=True
+        )
+        if result.returncode == 0:
+            print(f"removed volume {cfg.volume}")
+        else:
+            print(f"volume {cfg.volume} does not exist or could not be removed")
+
+
+def status(cfg: PgConfig) -> None:
+    ensure_ready()
+    info = inspect_container(cfg.container)
+    if info is None:
+        print(f"{cfg.container} does not exist")
+        return
+    print(f"{cfg.container}: {container_state(info)}")
+
+
+def logs(cfg: PgConfig, follow: bool) -> None:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        print(f"{cfg.container} does not exist")
+        return
+
+    args = ["logs"]
+    if follow:
+        args.append("--follow")
+    args.append(cfg.container)
+    run_container(*args)
+
+
+def psql(
+    cfg: PgConfig,
+    command: str | None = None,
+    extra: list[str] | None = None,
+    expanded: bool = False,
+) -> None:
+    ensure_ready()
+    if not container_exists(cfg.container):
+        print(f"{cfg.container} does not exist")
+        return
+    if not container_is_running(cfg.container):
+        print(f"{cfg.container} is not running")
+        return
+
+    exec_flags = ["exec"]
+    psql_args = ["psql", "-U", cfg.user, "-d", cfg.database]
+
+    if expanded:
+        psql_args.append("-x")
+
+    if command:
+        psql_args += ["-c", command]
+    else:
+        exec_flags += ["-i", "-t"]
+
+    if extra:
+        psql_args += extra
+
+    run_container(*exec_flags, cfg.container, *psql_args)
+
+
+def list_tables(cfg: PgConfig) -> None:
+    psql(cfg, command=r"\dt")
+
+
+def show_table(cfg: PgConfig, table: str) -> None:
+    if not TABLE_NAME.fullmatch(table):
+        print(f"invalid table name: {table}", file=sys.stderr)
+        raise SystemExit(2)
+    psql(cfg, command=f"SELECT * FROM {table}", expanded=True)
+
+
+def is_table_command(command: str) -> bool:
+    return command not in INFRA_COMMANDS and TABLE_NAME.fullmatch(command) is not None
+
+
+def make_config(args: argparse.Namespace) -> PgConfig:
+    return PgConfig(
+        image=args.image,
+        container=args.container,
+        volume=args.volume if isinstance(args.volume, str) else DEFAULT_VOLUME,
+        host=args.host,
+        port=args.port,
+        user=args.user,
+        password=args.password,
+        database=args.database,
+    )
+
+
+def add_common_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--image",
+        default=DEFAULT_IMAGE,
+        help=f"PostgreSQL image (default: {DEFAULT_IMAGE})",
+    )
+    parser.add_argument(
+        "--container",
+        default=DEFAULT_CONTAINER,
+        help=f"Container name (default: {DEFAULT_CONTAINER})",
+    )
+    parser.add_argument(
+        "--volume",
+        default=DEFAULT_VOLUME,
+        help=f"Container volume name (default: {DEFAULT_VOLUME})",
+    )
+    parser.add_argument(
+        "--host",
+        default=DEFAULT_HOST,
+        help=f"Host shown in app credentials (default: {DEFAULT_HOST})",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=DEFAULT_HOST_PORT,
+        help=f"Host port (default: {DEFAULT_HOST_PORT})",
+    )
+    parser.add_argument(
+        "--user", default=DEFAULT_USER, help=f"Database user (default: {DEFAULT_USER})"
+    )
+    parser.add_argument(
+        "--password",
+        default=DEFAULT_PASSWORD,
+        help=f"Database password (default: {DEFAULT_PASSWORD})",
+    )
+    parser.add_argument(
+        "--database",
+        default=DEFAULT_DATABASE,
+        help=f"Database name (default: {DEFAULT_DATABASE})",
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run a local PostgreSQL database for mut with Apple Container.",
+        epilog=HELP_TEXT,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    add_common_options(parser)
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    start_parser = subparsers.add_parser(
+        "start", help="Create or start the PostgreSQL container"
+    )
+    start_parser.add_argument(
+        "--pull", action="store_true", help="Pull the image before starting"
+    )
+
+    subparsers.add_parser("stop", help="Stop the PostgreSQL container")
+    subparsers.add_parser("restart", help="Restart the PostgreSQL container")
+    subparsers.add_parser("status", help="Show container status")
+    subparsers.add_parser("credentials", help="Print app database credentials")
+    psql_parser = subparsers.add_parser(
+        "psql", help="Open an interactive psql shell, or run a one-off query"
+    )
+    psql_parser.add_argument(
+        "-c",
+        "--command",
+        dest="sql",
+        help="Run a single SQL command non-interactively instead of opening a shell",
+    )
+    psql_parser.add_argument(
+        "-x",
+        "--expanded",
+        action="store_true",
+        help="Use expanded output (one record per multi-line block)",
+    )
+    psql_parser.add_argument(
+        "extra",
+        nargs=argparse.REMAINDER,
+        help="Extra arguments passed through to psql (e.g. -- -c '\\dt')",
+    )
+
+    subparsers.add_parser("tables", help="List database tables (\\dt)")
+
+    logs_parser = subparsers.add_parser("logs", help="Show PostgreSQL container logs")
+    logs_parser.add_argument("-f", "--follow", action="store_true", help="Follow logs")
+
+    remove_parser = subparsers.add_parser(
+        "remove", help="Remove the PostgreSQL container"
+    )
+    remove_parser.add_argument(
+        "--with-volume", action="store_true", help="Also remove the container volume"
+    )
+
+    return parser
+
+
+def main() -> int:
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    add_common_options(pre_parser)
+    pre_args, argv = pre_parser.parse_known_args()
+    cfg = make_config(pre_args)
+
+    if "-h" in sys.argv or "--help" in sys.argv:
+        build_parser().print_help()
+        return 0
+
+    if not argv:
+        argv = ["start"]
+
+    command = argv[0]
+    if is_table_command(command):
+        show_table(cfg, command)
+        return 0
+
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    for field in (
+        "image",
+        "container",
+        "volume",
+        "host",
+        "port",
+        "user",
+        "password",
+        "database",
+    ):
+        setattr(args, field, getattr(pre_args, field))
+    cfg = make_config(args)
+
+    command = args.command or "start"
+
+    if command == "start":
+        start(cfg, pull=getattr(args, "pull", False))
+    elif command == "stop":
+        stop(cfg)
+    elif command == "restart":
+        restart(cfg)
+    elif command == "status":
+        status(cfg)
+    elif command == "credentials":
+        print(credentials(cfg))
+    elif command == "logs":
+        logs(cfg, follow=getattr(args, "follow", False))
+    elif command == "remove":
+        remove(cfg, volume=getattr(args, "with_volume", False))
+    elif command == "psql":
+        psql(
+            cfg,
+            command=getattr(args, "sql", None),
+            extra=getattr(args, "extra", None),
+            expanded=getattr(args, "expanded", False),
+        )
+    elif command == "tables":
+        list_tables(cfg)
+    else:
+        parser.error(f"unknown command: {command}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

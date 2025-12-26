@@ -1,0 +1,12 @@
+.git
+.DS_Store
+
+mut
+*.db
+*.out
+*.test
+coverage.html
+
+web/node_modules
+
+bin

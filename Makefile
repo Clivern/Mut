@@ -22,7 +22,7 @@ revive:
 .PHONY: style
 style:
 	@echo ">> ============= Checking Code Style ============= <<"
-	@fmtRes=$$($(gofmt) -d $$(find . -path ./vendor -prune -o -name '*.go' -print)); \
+	@fmtRes=$$($(gofmt) -d $$(find . -path ./vendor -prune -o -path ./cache -prune -o -name '*.go' -print)); \
 	if [ -n "$${fmtRes}" ]; then \
 		echo "gofmt checking failed!"; echo "$${fmtRes}"; echo; \
 		echo "Please ensure you are using $$($(go) version) for formatting code."; \
@@ -34,7 +34,7 @@ style:
 .PHONY: check_license
 check_license:
 	@echo ">> ============= Checking License Header ============= <<"
-	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*') ; do \
+	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*' ! -path './cache/*') ; do \
 			   awk 'NR<=3' $$file | grep -Eq "(Copyright|generated|GENERATED)" || echo $$file; \
 	   done); \
 	   if [ -n "$${licRes}" ]; then \
@@ -49,6 +49,13 @@ test_short:
 	@echo ">> ============= Running Short Tests ============= <<"
 	$(go) clean -testcache
 	$(go) test -mod=readonly -short $(pkgs)
+
+
+## web: Build the web assets.
+.PHONY: web
+web:
+	@echo ">> ============= Building Web Assets ============= <<"
+	cd web && npm run build
 
 
 ## test: Run test cases.
@@ -71,7 +78,7 @@ integration:
 .PHONY: lint
 lint:
 	@echo ">> ============= Lint All Files ============= <<"
-	revive -config config.toml -exclude vendor/... -formatter friendly ./...
+	revive -config config.toml -exclude vendor/... -formatter friendly $(pkgs)
 
 
 ## verify: Verify dependencies
@@ -97,13 +104,6 @@ vet:
 	$(go) vet $(pkgs)
 
 
-## web: Build the web assets.
-.PHONY: web
-web:
-	@echo ">> ============= Building Web Assets ============= <<"
-	cd web && npm run build
-
-
 ## coverage: Create HTML coverage report
 .PHONY: coverage
 coverage:
@@ -112,12 +112,29 @@ coverage:
 	$(go) test -mod=readonly -coverprofile=cover.out $(pkgs)
 	go tool cover -html=cover.out -o coverage.html
 
+
+## deps: Start local Postgres and NATS
+.PHONY: deps
+deps:
+	@echo ">> ============= Start Local Dependencies ============= <<"
+	container system start
+	./bin/pgsql start
+	./bin/nats start
+
+
 ## run: Run the Server
 .PHONY: run
 run:
 	@echo ">> ============= Run API Server ============= <<"
-	$(go) run mut.go migrate up -c config.dist.yml
-	$(go) run mut.go server -c config.dist.yml
+	$(go) run mut.go migrate up -c config.test.yml
+	$(go) run mut.go server -c config.test.yml
+
+
+## consumer: Run the NATS consumer
+.PHONY: consumer
+consumer:
+	@echo ">> ============= Run NATS Consumer ============= <<"
+	$(go) run mut.go worker -c config.test.yml
 
 
 ## ci: Run all CI tests.
