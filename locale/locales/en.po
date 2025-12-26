@@ -1,0 +1,127 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "account_not_active"
+msgstr "Account is not active."
+
+msgid "api_key_not_found"
+msgstr "API key not found."
+
+msgid "cannot_delete_own_account"
+msgstr "You cannot delete your own account."
+
+msgid "failed_complete_setup"
+msgstr "Failed to complete setup."
+
+msgid "failed_create_api_key"
+msgstr "Failed to create API key."
+
+msgid "failed_create_user"
+msgstr "Failed to create user."
+
+msgid "failed_delete_api_key"
+msgstr "Failed to delete API key."
+
+msgid "failed_delete_user"
+msgstr "Failed to delete user."
+
+msgid "failed_get_api_key"
+msgstr "Failed to get API key."
+
+msgid "failed_get_me"
+msgstr "Failed to get authenticated principal."
+
+msgid "failed_get_profile"
+msgstr "Failed to get profile."
+
+msgid "failed_get_settings"
+msgstr "Failed to get settings."
+
+msgid "failed_get_user"
+msgstr "Failed to get user."
+
+msgid "failed_list_api_keys"
+msgstr "Failed to list API keys."
+
+msgid "failed_list_users"
+msgstr "Failed to list users."
+
+msgid "failed_login"
+msgstr "Failed to log in."
+
+msgid "failed_update_profile"
+msgstr "Failed to update profile."
+
+msgid "failed_update_settings"
+msgstr "Failed to update settings."
+
+msgid "failed_update_user"
+msgstr "Failed to update user."
+
+msgid "insufficient_permissions"
+msgstr "Insufficient permissions."
+
+msgid "invalid_api_key"
+msgstr "Invalid API key."
+
+msgid "invalid_api_key_id"
+msgstr "Invalid API key ID."
+
+msgid "invalid_credentials"
+msgstr "Invalid email or password."
+
+msgid "invalid_expires_at_format"
+msgstr "Invalid expiresAt format."
+
+msgid "invalid_or_expired_session"
+msgstr "Invalid or expired session."
+
+msgid "invalid_request"
+msgstr "Invalid request."
+
+msgid "login_successful"
+msgstr "Login successful."
+
+msgid "logout_successful"
+msgstr "Logout successful."
+
+msgid "maintenance_mode_enabled"
+msgstr "Maintenance mode is enabled."
+
+msgid "me_requires_key_header"
+msgstr "X-API-Key or X-Access-Key header is required."
+
+msgid "not_authenticated"
+msgstr "Not authenticated."
+
+msgid "platform_already_installed"
+msgstr "Platform is already installed."
+
+msgid "profile_updated_successfully"
+msgstr "Profile updated successfully."
+
+msgid "route_not_found"
+msgstr "Route not found."
+
+msgid "settings_updated_successfully"
+msgstr "Settings updated successfully."
+
+msgid "setup_completed_successfully"
+msgstr "Setup completed successfully."
+
+msgid "too_many_requests"
+msgstr "Too many requests. Please try again later."
+
+msgid "user_created_successfully"
+msgstr "User created successfully."
+
+msgid "user_email_already_exists"
+msgstr "A user with this email already exists."
+
+msgid "user_not_found"
+msgstr "User not found."
+
+msgid "user_updated_successfully"
+msgstr "User updated successfully."

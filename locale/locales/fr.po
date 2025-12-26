@@ -1,0 +1,127 @@
+msgid ""
+msgstr ""
+"Language: fr\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "account_not_active"
+msgstr "Le compte n'est pas actif."
+
+msgid "api_key_not_found"
+msgstr "Clé API introuvable."
+
+msgid "cannot_delete_own_account"
+msgstr "Vous ne pouvez pas supprimer votre propre compte."
+
+msgid "failed_complete_setup"
+msgstr "Impossible de finaliser la configuration."
+
+msgid "failed_create_api_key"
+msgstr "Impossible de créer la clé API."
+
+msgid "failed_create_user"
+msgstr "Impossible de créer l'utilisateur."
+
+msgid "failed_delete_api_key"
+msgstr "Impossible de supprimer la clé API."
+
+msgid "failed_delete_user"
+msgstr "Impossible de supprimer l'utilisateur."
+
+msgid "failed_get_api_key"
+msgstr "Impossible de récupérer la clé API."
+
+msgid "failed_get_me"
+msgstr "Impossible de récupérer le principal authentifié."
+
+msgid "failed_get_profile"
+msgstr "Impossible de récupérer le profil."
+
+msgid "failed_get_settings"
+msgstr "Impossible de récupérer les paramètres."
+
+msgid "failed_get_user"
+msgstr "Impossible de récupérer l'utilisateur."
+
+msgid "failed_list_api_keys"
+msgstr "Impossible de lister les clés API."
+
+msgid "failed_list_users"
+msgstr "Impossible de lister les utilisateurs."
+
+msgid "failed_login"
+msgstr "Échec de la connexion."
+
+msgid "failed_update_profile"
+msgstr "Impossible de mettre à jour le profil."
+
+msgid "failed_update_settings"
+msgstr "Impossible de mettre à jour les paramètres."
+
+msgid "failed_update_user"
+msgstr "Impossible de mettre à jour l'utilisateur."
+
+msgid "insufficient_permissions"
+msgstr "Permissions insuffisantes."
+
+msgid "invalid_api_key"
+msgstr "Clé API invalide."
+
+msgid "invalid_api_key_id"
+msgstr "ID de clé API invalide."
+
+msgid "invalid_credentials"
+msgstr "E-mail ou mot de passe invalide."
+
+msgid "invalid_expires_at_format"
+msgstr "Format expiresAt invalide."
+
+msgid "invalid_or_expired_session"
+msgstr "Session invalide ou expirée."
+
+msgid "invalid_request"
+msgstr "Requête invalide."
+
+msgid "login_successful"
+msgstr "Connexion réussie."
+
+msgid "logout_successful"
+msgstr "Déconnexion réussie."
+
+msgid "maintenance_mode_enabled"
+msgstr "Le mode maintenance est activé."
+
+msgid "me_requires_key_header"
+msgstr "L'en-tête X-API-Key ou X-Access-Key est requis."
+
+msgid "not_authenticated"
+msgstr "Non authentifié."
+
+msgid "platform_already_installed"
+msgstr "La plateforme est déjà installée."
+
+msgid "profile_updated_successfully"
+msgstr "Profil mis à jour avec succès."
+
+msgid "route_not_found"
+msgstr "Route introuvable."
+
+msgid "settings_updated_successfully"
+msgstr "Paramètres mis à jour avec succès."
+
+msgid "setup_completed_successfully"
+msgstr "Configuration terminée avec succès."
+
+msgid "too_many_requests"
+msgstr "Trop de requêtes. Veuillez réessayer plus tard."
+
+msgid "user_created_successfully"
+msgstr "Utilisateur créé avec succès."
+
+msgid "user_email_already_exists"
+msgstr "Un utilisateur avec cet e-mail existe déjà."
+
+msgid "user_not_found"
+msgstr "Utilisateur introuvable."
+
+msgid "user_updated_successfully"
+msgstr "Utilisateur mis à jour avec succès."

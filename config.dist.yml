@@ -1,49 +1,49 @@
-# Server configs
 app:
-  # Server name
-  name: ${MUT_SERVER_NAME:-mut}
-  # Env mode (dev or prod)
+  name: ${MUT_SERVER_NAME:-Mut}
   mode: ${MUT_SERVER_MODE:-prod}
-  # HTTP port
   port: ${MUT_SERVER_PORT:-8000}
-  # Hostname
-  hostname: ${MUT_SERVER_HOSTNAME:-127.0.0.1}
-  # TLS configs
-  tls:
-    status: ${MUT_SERVER_TLS_STATUS:-off}
-    crt_path: ${MUT_SERVER_TLS_PEMPATH:-cert/server.crt}
-    key_path: ${MUT_SERVER_TLS_KEYPATH:-cert/server.key}
-
-  # Global timeout
+  url: ${MUT_SERVER_URL:-http://127.0.0.1:8000}
   timeout: ${MUT_SERVER_TIMEOUT:-50}
+  # Comma-separated CIDRs of reverse proxies allowed to set X-Forwarded-For; empty means use the TCP peer
+  trusted_proxies: ${MUT_TRUSTED_PROXIES:-}
 
-  # Prometheus metrics endpoint
+  encryption:
+    key: ${MUT_ENCRYPTION_KEY:-}
+
   metrics:
     username: ${MUT_SERVER_PROM_METRICS_USERNAME:-admin}
     secret: ${MUT_SERVER_PROM_METRICS_SECRET:-secret}
 
-  # Log configs
   log:
-    # Log level, it can be debug, info, warn, error, panic, fatal
     level: ${MUT_SERVER_LOG_LEVEL:-debug}
-    # Output can be stdout or abs path to log file /var/logs/mut.log
     output: ${MUT_SERVER_LOG_OUTPUT:-stdout}
-    # Format can be json
     format: ${MUT_SERVER_LOG_FORMAT:-json}
 
-  # Database configs
   database:
-    # Database driver (postgres, postgresql, or sqlite)
-    driver: ${MUT_DATABASE_DRIVER:-sqlite}
-    # PostgreSQL specific configs
-    host: ${MUT_DATABASE_HOST:-localhost}
-    port: ${MUT_DATABASE_PORT:-5432}
-    username: ${MUT_DATABASE_USERNAME:-postgres}
-    password: ${MUT_DATABASE_PASSWORD:-postgres}
-    name: ${MUT_DATABASE_NAME:-mut}
-    # Connection pool settings
-    max_open_conns: ${MUT_DATABASE_MAX_OPEN_CONNS:-25}
-    max_idle_conns: ${MUT_DATABASE_MAX_IDLE_CONNS:-10}
-    conn_max_lifetime: ${MUT_DATABASE_CONN_MAX_LIFETIME:-300}
-    # SQLite specific config (path to database file)
-    datasource: ${MUT_DATABASE_DATASOURCE:-./cache/mut.db}
+    rw:
+      driver: ${MUT_DATABASE_DRIVER:-postgres}
+      host: ${MUT_DATABASE_HOST:-localhost}
+      port: ${MUT_DATABASE_PORT:-5433}
+      username: ${MUT_DATABASE_USERNAME:-postgres}
+      password: ${MUT_DATABASE_PASSWORD:-postgres}
+      name: ${MUT_DATABASE_NAME:-mut}
+      max_open_conns: ${MUT_DATABASE_MAX_OPEN_CONNS:-25}
+      max_idle_conns: ${MUT_DATABASE_MAX_IDLE_CONNS:-10}
+      conn_max_lifetime: ${MUT_DATABASE_CONN_MAX_LIFETIME:-300}
+    ro:
+    - driver: ${MUT_DATABASE_DRIVER:-postgres}
+      host: ${MUT_DATABASE_HOST:-localhost}
+      port: ${MUT_DATABASE_PORT:-5433}
+      username: ${MUT_DATABASE_USERNAME:-postgres}
+      password: ${MUT_DATABASE_PASSWORD:-postgres}
+      name: ${MUT_DATABASE_NAME:-mut}
+      max_open_conns: ${MUT_DATABASE_MAX_OPEN_CONNS:-25}
+      max_idle_conns: ${MUT_DATABASE_MAX_IDLE_CONNS:-10}
+      conn_max_lifetime: ${MUT_DATABASE_CONN_MAX_LIFETIME:-300}
+
+  broker:
+    provider: ${MUT_BROKER_PROVIDER:-nats}
+    nats:
+      url: ${MUT_BROKER_URL:-nats://127.0.0.1:4222}
+      name: ${MUT_BROKER_NAME:-mut}
+      queue: ${MUT_BROKER_QUEUE:-mut}
