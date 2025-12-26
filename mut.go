@@ -7,8 +7,10 @@ package main
 
 import (
 	"embed"
+	"io/fs"
 
 	"github.com/clivern/mut/cli"
+	"github.com/clivern/mut/locale"
 )
 
 var (
@@ -21,12 +23,24 @@ var (
 //go:embed web/dist/*
 var static embed.FS
 
+//go:embed locale/locales
+var localeFS embed.FS
+
+// main is the application entry point.
 func main() {
 	cli.Version = version
 	cli.Commit = commit
 	cli.Date = date
 	cli.BuiltBy = builtBy
 	cli.Static = static
+
+	// Load locales
+	if sub, err := fs.Sub(localeFS, "locale/locales"); err == nil {
+		err = locale.Load(sub)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	cli.Execute()
 }
