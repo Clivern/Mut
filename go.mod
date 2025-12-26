@@ -1,6 +1,6 @@
 module github.com/clivern/mut
 
-go 1.27.1
+go 1.27.3
 
 require (
 	github.com/drone/envsubst v1.0.3

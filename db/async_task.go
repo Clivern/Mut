@@ -175,13 +175,11 @@ func (r *AsyncTaskRepositoryPostgres) ListByStatus(status string) ([]*AsyncTask,
 	var list []*AsyncTask
 	for rows.Next() {
 		task := &AsyncTask{}
-		var payload string
-		err := rows.Scan(&task.Id, &task.Type, &payload)
+		err := rows.Scan(&task.Id, &task.Type, &task.Payload)
 		if err != nil {
 			return nil, err
 		}
 
-		task.Payload = &payload
 		list = append(list, task)
 	}
 
