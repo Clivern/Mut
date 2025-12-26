@@ -3,8 +3,8 @@
     <h3 align="center">Mut</h3>
     <p align="center">AI Powered Kubernetes operator for anomaly detection and resource optimization.</p>
     <p align="center">
-        <a href="https://github.com/Clivern/Mut/actions/workflows/api.yml">
-            <img src="https://github.com/Clivern/Mut/actions/workflows/api.yml/badge.svg">
+        <a href="https://github.com/Clivern/Mut/actions/workflows/ci.yml">
+            <img src="https://github.com/Clivern/Mut/actions/workflows/ci.yml/badge.svg">
         </a>
         <a href="https://github.com/Clivern/Mut/releases">
             <img src="https://img.shields.io/badge/Version-v0.1.0-red.svg">
