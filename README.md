@@ -1,5 +1,5 @@
 <p align="center">
-    <img alt="Mut Logo" src="/static/logo.png?v=0.4.0" width="140" />
+    <img alt="Mut Logo" src="/static/logo.png?v=0.0.1" width="140" />
     <h3 align="center">Mut</h3>
     <p align="center">AI Powered Kubernetes operator for anomaly detection and resource optimization.</p>
     <p align="center">

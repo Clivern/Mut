@@ -7,18 +7,20 @@
     :aria-label="alt || undefined"
     :aria-hidden="alt ? undefined : true"
   >
-    <g fill="none" stroke="currentColor">
-      <circle cx="256" cy="256" r="206" stroke-width="34" />
-      <circle cx="256" cy="256" r="112" stroke-width="26" />
-      <path d="M256 256 L392 120" stroke-width="30" stroke-linecap="round" />
-    </g>
-    <circle cx="256" cy="256" r="28" />
-    <circle cx="352" cy="332" r="32" fill="#F5B700" />
+    <rect x="90" y="90" width="92" height="92" rx="22" />
+    <rect x="210" y="90" width="92" height="92" rx="22" />
+    <rect x="330" y="90" width="92" height="92" rx="22" />
+    <rect x="90" y="210" width="92" height="92" rx="22" />
+    <rect x="210" y="210" width="92" height="92" rx="22" />
+    <rect x="330" y="210" width="92" height="92" rx="22" />
+    <rect x="90" y="330" width="92" height="92" rx="22" />
+    <rect x="210" y="330" width="92" height="92" rx="22" />
+    <rect x="342" y="342" width="92" height="92" rx="22" fill="#F5B700" transform="rotate(14 388 388)" />
   </svg>
 </template>
 
 <script setup>
-// Radar mark: a sweep watching the cluster, the amber blip is the anomaly it caught
+// Odd pod mark: a grid of pods, the amber one knocked out of line is the anomaly Mut caught
 defineProps({
   alt: {
     type: String,
