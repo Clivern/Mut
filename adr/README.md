@@ -65,7 +65,6 @@ Use the template in `0000-template.md` when creating new ADRs.
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
 | [0000](0000-template.md) | ADR Template | - | - |
-| [0001](0001-discovery-worker-pool.md) | Discovery Worker Pool for MCP Servers | Accepted | 2024-11-01 |
 
 ## References
 

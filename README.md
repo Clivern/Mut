@@ -1,7 +1,7 @@
 <p align="center">
-    <img alt="Mut Logo" src="/static/logo.png?v=0.1.0" width="220" />
+    <img alt="Mut Logo" src="/static/logo.png?v=0.3.0" width="220" />
     <h3 align="center">Mut</h3>
-    <p align="center">A Fast, Lightweight, Secure MCP Gateway, Set up in Minutes</p>
+    <p align="center">AI Powered Kubernetes operator for anomaly detection and resource optimization.</p>
     <p align="center">
         <a href="https://github.com/Clivern/Mut/actions/workflows/api.yml">
             <img src="https://github.com/Clivern/Mut/actions/workflows/api.yml/badge.svg">
@@ -15,18 +15,15 @@
     </p>
 </p>
 
-**Mut** is a production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) Gateway that unifies multiple MCP servers into a single, manageable endpoint. Built with Go for speed and reliability, Mut serves as the central system for your AI infrastructure.
+**Mut** connects to your Kubernetes cluster, continuously monitors resources, metrics, and events, then feeds that data to an LLM to detect patterns, flag anomalies, and suggest optimizations. It bridges the gap between raw cluster data and intelligent decision-making.
 
 ### 🎯 Features
 
-- **🔌 Multi-Protocol Support** - Seamlessly connects to MCP servers via `stdio` and `SSE` protocols
-- **🎭 Virtual Servers** - Compose custom MCP endpoints by mixing and matching capabilities from different sources.
-- **📊 Built-in Dashboard** - Beautiful web UI for configuration, monitoring, and management
-- **🔒 Security First** - Built-in authentication, authorization, and secure communication
-- **⚡ High Performance** - Single binary, minimal footprint, optimized for production workloads
-- **🔍 Auto-Discovery** - Automatic detection and registration of MCP server capabilities
-- **📈 Observability** - Comprehensive logging, metrics, and health monitoring
-- **🏗️ Infrastructure as Code** - Terraform support for automated deployment and configuration
+- **🔭 Real-time Cluster Analysis** - Watches pods, nodes, deployments, and events across your cluster
+- **🧠 LLM-powered Insights** - Uses large language models to reason about cluster health and resource efficiency
+- **🚨 Anomaly Detection** - Identifies unusual patterns and potential issues before they escalate
+- **⚙️ Resource Optimization** - Suggests improvements to resource requests, limits, and replica counts
+- **🛠️ Actionable Recommendations** - Generates human-readable explanations and remediation steps
 
 
 ### 🧭 Versioning
@@ -34,11 +31,6 @@
 For transparency into our release cycle and in striving to maintain backward compatibility, Mut is maintained under the [Semantic Versioning guidelines](https://semver.org/) and release process is predictable and business-friendly.
 
 See the [Releases section of our GitHub project](https://github.com/Clivern/Mut/releases) for changelogs for each release version of Mut. It contains summaries of the most noteworthy changes made in each release. Also see the [Milestones section](https://github.com/Clivern/Mut/milestones) for the future roadmap.
-
-
-### 📚 MCP Protocol
-
-For the official MCP protocol schema and specification, see [modelcontextprotocol/modelcontextprotocol](https://github.com/modelcontextprotocol/modelcontextprotocol). This repository contains the complete protocol definitions, TypeScript types, and JSON Schema files.
 
 
 ### 🐞 Bug tracker
