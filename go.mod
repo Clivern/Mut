@@ -3,14 +3,14 @@ module github.com/clivern/mut
 go 1.27.3
 
 require (
-	github.com/OpenRouterTeam/go-sdk v0.9.75
+	github.com/OpenRouterTeam/go-sdk v0.9.116
 	github.com/drone/envsubst v1.0.3
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-chi/httprate v0.16.1
-	github.com/go-playground/validator/v10 v10.30.5
+	github.com/go-playground/validator/v10 v10.30.6
 	github.com/google/uuid v1.6.0
 	github.com/imroc/req/v3 v3.61.0
-	github.com/jackc/pgx/v5 v5.11.0
+	github.com/jackc/pgx/v5 v5.12.0
 	github.com/leonelquinteros/gotext v1.8.0
 	github.com/nats-io/nats.go v1.55.0
 	github.com/panjf2000/ants/v2 v2.12.1
@@ -21,7 +21,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/crypto v0.58.0
-	k8s.io/client-go v0.37.1
+	k8s.io/client-go v0.37.2
 )
 
 require (
@@ -80,7 +80,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/spyzhov/ajson v0.8.0 // indirect
+	github.com/spyzhov/ajson v0.9.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
@@ -96,8 +96,8 @@ require (
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	k8s.io/api v0.37.1 // indirect
-	k8s.io/apimachinery v0.37.1 // indirect
+	k8s.io/api v0.37.2 // indirect
+	k8s.io/apimachinery v0.37.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad // indirect
 	k8s.io/utils v0.0.0-20260626114624-be93311217bd // indirect
