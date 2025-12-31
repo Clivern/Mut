@@ -6,7 +6,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 
 	"github.com/samber/lo"
@@ -89,6 +88,23 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &UserRepositoryPostgres{db: db}
 }
 
+// scanUser maps a row into a user. Column order must match the select list.
+func scanUser(user *User) []any {
+	return []any{
+		&user.Id,
+		&user.Name,
+		&user.Email,
+		&user.Password,
+		&user.Role,
+		&user.IsActive,
+		&user.LastLoginAt,
+		&user.Language,
+		&user.Theme,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	}
+}
+
 // --- Postgres ---
 
 // Create inserts a row
@@ -123,32 +139,16 @@ func (r *UserRepositoryPostgres) Create(user *User) error {
 
 // GetById returns a user by Id
 func (r *UserRepositoryPostgres) GetById(id Id) (*User, error) {
-	user := &User{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT
 			id, name, email, pwd_hash, role, is_active,
 			last_login_at, language, theme, created_at, updated_at
 		FROM users
 		WHERE id = $1`,
+		scanUser,
 		id.String(),
-	).Scan(
-		&user.Id,
-		&user.Name,
-		&user.Email,
-		&user.Password,
-		&user.Role,
-		&user.IsActive,
-		&user.LastLoginAt,
-		&user.Language,
-		&user.Theme,
-		&user.CreatedAt,
-		&user.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return user, err
 }
 
 // GetByAPIKey returns a user by API key (raw key lookup)
@@ -157,63 +157,31 @@ func (r *UserRepositoryPostgres) GetByAPIKey(apiKey string) (*User, error) {
 		return nil, nil
 	}
 
-	user := &User{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT
 			u.id, u.name, u.email, u.pwd_hash, u.role, u.is_active,
 			u.last_login_at, u.language, u.theme, u.created_at, u.updated_at
 		FROM users u
 		INNER JOIN user_api_keys k ON u.id = k.user_id
 		WHERE k.token = $1 AND (k.expires_at IS NULL OR k.expires_at > CURRENT_TIMESTAMP)`,
+		scanUser,
 		apiKey,
-	).Scan(
-		&user.Id,
-		&user.Name,
-		&user.Email,
-		&user.Password,
-		&user.Role,
-		&user.IsActive,
-		&user.LastLoginAt,
-		&user.Language,
-		&user.Theme,
-		&user.CreatedAt,
-		&user.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return user, err
 }
 
 // GetByEmail returns a user by email
 func (r *UserRepositoryPostgres) GetByEmail(email string) (*User, error) {
-	user := &User{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT
 			id, name, email, pwd_hash, role, is_active,
 			last_login_at, language, theme, created_at, updated_at
 		FROM users
 		WHERE email = $1`,
+		scanUser,
 		email,
-	).Scan(
-		&user.Id,
-		&user.Name,
-		&user.Email,
-		&user.Password,
-		&user.Role,
-		&user.IsActive,
-		&user.LastLoginAt,
-		&user.Language,
-		&user.Theme,
-		&user.CreatedAt,
-		&user.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return user, err
 }
 
 // Update updates a user
@@ -275,44 +243,18 @@ func (r *UserRepositoryPostgres) Delete(id Id) error {
 
 // List returns a list of users
 func (r *UserRepositoryPostgres) List(limit, offset int) ([]*User, error) {
-	rows, err := r.db.Query(
+	return QueryMany(
+		r.db,
 		`SELECT
 			id, name, email, pwd_hash, role, is_active,
 			last_login_at, language, theme, created_at, updated_at
 		FROM users
 		ORDER BY created_at DESC
 		LIMIT $1 OFFSET $2`,
+		scanUser,
 		limit,
 		offset,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-	var list []*User
-	for rows.Next() {
-		u := &User{}
-		if err := rows.Scan(
-			&u.Id,
-			&u.Name,
-			&u.Email,
-			&u.Password,
-			&u.Role,
-			&u.IsActive,
-			&u.LastLoginAt,
-			&u.Language,
-			&u.Theme,
-			&u.CreatedAt,
-			&u.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-
-		list = append(list, u)
-	}
-
-	return list, rows.Err()
 }
 
 // Count returns the total number of users
@@ -329,6 +271,18 @@ func (r *UserRepositoryPostgres) Count() (int64, error) {
 // NewUserMetaRepository returns the repository for the current driver
 func NewUserMetaRepository(db *sql.DB) UserMetaRepository {
 	return &UserMetaRepositoryPostgres{db: db}
+}
+
+// scanUserMeta maps a row into user metadata. Column order must match the select list.
+func scanUserMeta(meta *UserMeta) []any {
+	return []any{
+		&meta.Id,
+		&meta.Key,
+		&meta.Value,
+		&meta.UserId,
+		&meta.CreatedAt,
+		&meta.UpdatedAt,
+	}
 }
 
 // Create inserts a user meta. TODO: remove if not used in future.
@@ -352,26 +306,15 @@ func (r *UserMetaRepositoryPostgres) Create(id Id, key, value string) error {
 
 // Get returns a user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) Get(id Id, key string) (*UserMeta, error) {
-	meta := &UserMeta{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT id, key, value, user_id, created_at, updated_at
 		FROM users_meta
 		WHERE user_id = $1 AND key = $2`,
+		scanUserMeta,
 		id.String(),
 		key,
-	).Scan(
-		&meta.Id,
-		&meta.Key,
-		&meta.Value,
-		&meta.UserId,
-		&meta.CreatedAt,
-		&meta.UpdatedAt,
 	)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return meta, err
 }
 
 // Update updates a user meta. TODO: remove if not used in future.
@@ -404,37 +347,15 @@ func (r *UserMetaRepositoryPostgres) Delete(id Id, key string) error {
 
 // ListByUser returns a list of user meta. TODO: remove if not used in future.
 func (r *UserMetaRepositoryPostgres) ListByUser(id Id) ([]*UserMeta, error) {
-	rows, err := r.db.Query(
+	return QueryMany(
+		r.db,
 		`SELECT id, key, value, user_id, created_at, updated_at
 		FROM users_meta
 		WHERE user_id = $1
 		ORDER BY key`,
+		scanUserMeta,
 		id.String(),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-	var list []*UserMeta
-	for rows.Next() {
-		m := &UserMeta{}
-		err := rows.Scan(
-			&m.Id,
-			&m.Key,
-			&m.Value,
-			&m.UserId,
-			&m.CreatedAt,
-			&m.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		list = append(list, m)
-	}
-
-	return list, rows.Err()
 }
 
 // Upsert upserts a user meta. TODO: remove if not used in future.

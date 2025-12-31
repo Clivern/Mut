@@ -51,7 +51,19 @@ func (a *API) CreateUserAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.WriteJSON(w, http.StatusCreated, map[string]any{
-		"user":           userResponse(user),
+		"user": map[string]any{
+			"id":          user.Id,
+			"name":        user.Name,
+			"email":       user.Email,
+			"role":        user.Role,
+			"isActive":    user.IsActive,
+			"avatar":      util.GravatarURL(user.Email, 80),
+			"language":    user.Language,
+			"theme":       user.Theme,
+			"lastLoginAt": user.LastLoginAt.UTC().Format(time.RFC3339),
+			"createdAt":   user.CreatedAt.UTC().Format(time.RFC3339),
+			"updatedAt":   user.UpdatedAt.UTC().Format(time.RFC3339),
+		},
 		"successMessage": locale.TR(r, "user_created_successfully"),
 	})
 }
@@ -73,7 +85,19 @@ func (a *API) ListUsersAction(w http.ResponseWriter, r *http.Request) {
 
 	a.WriteJSON(w, http.StatusOK, map[string]any{
 		"users": lo.Map(result.Users, func(user *db.User, _ int) map[string]any {
-			return userResponse(user)
+			return map[string]any{
+				"id":          user.Id,
+				"name":        user.Name,
+				"email":       user.Email,
+				"role":        user.Role,
+				"isActive":    user.IsActive,
+				"avatar":      util.GravatarURL(user.Email, 80),
+				"language":    user.Language,
+				"theme":       user.Theme,
+				"lastLoginAt": user.LastLoginAt.UTC().Format(time.RFC3339),
+				"createdAt":   user.CreatedAt.UTC().Format(time.RFC3339),
+				"updatedAt":   user.UpdatedAt.UTC().Format(time.RFC3339),
+			}
 		}),
 		"_meta": map[string]any{
 			"limit":  limit,
@@ -107,7 +131,19 @@ func (a *API) GetUserAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.WriteJSON(w, http.StatusOK, map[string]any{
-		"user": userResponse(user),
+		"user": map[string]any{
+			"id":          user.Id,
+			"name":        user.Name,
+			"email":       user.Email,
+			"role":        user.Role,
+			"isActive":    user.IsActive,
+			"avatar":      util.GravatarURL(user.Email, 80),
+			"language":    user.Language,
+			"theme":       user.Theme,
+			"lastLoginAt": user.LastLoginAt.UTC().Format(time.RFC3339),
+			"createdAt":   user.CreatedAt.UTC().Format(time.RFC3339),
+			"updatedAt":   user.UpdatedAt.UTC().Format(time.RFC3339),
+		},
 	})
 }
 
@@ -147,7 +183,19 @@ func (a *API) UpdateUserAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.WriteJSON(w, http.StatusOK, map[string]any{
-		"user":           userResponse(user),
+		"user": map[string]any{
+			"id":          user.Id,
+			"name":        user.Name,
+			"email":       user.Email,
+			"role":        user.Role,
+			"isActive":    user.IsActive,
+			"avatar":      util.GravatarURL(user.Email, 80),
+			"language":    user.Language,
+			"theme":       user.Theme,
+			"lastLoginAt": user.LastLoginAt.UTC().Format(time.RFC3339),
+			"createdAt":   user.CreatedAt.UTC().Format(time.RFC3339),
+			"updatedAt":   user.UpdatedAt.UTC().Format(time.RFC3339),
+		},
 		"successMessage": locale.TR(r, "user_updated_successfully"),
 	})
 }
@@ -182,21 +230,4 @@ func (a *API) DeleteUserAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// userResponse shapes a user for API responses.
-func userResponse(user *db.User) map[string]any {
-	return map[string]any{
-		"id":          user.Id,
-		"name":        user.Name,
-		"email":       user.Email,
-		"role":        user.Role,
-		"isActive":    user.IsActive,
-		"avatar":      util.GravatarURL(user.Email, 80),
-		"language":    user.Language,
-		"theme":       user.Theme,
-		"lastLoginAt": user.LastLoginAt.UTC().Format(time.RFC3339),
-		"createdAt":   user.CreatedAt.UTC().Format(time.RFC3339),
-		"updatedAt":   user.UpdatedAt.UTC().Format(time.RFC3339),
-	}
 }

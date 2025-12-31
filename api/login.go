@@ -6,6 +6,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/clivern/mut/locale"
 	"github.com/clivern/mut/module"
@@ -52,6 +53,18 @@ func (a *API) LoginAction(w http.ResponseWriter, r *http.Request) {
 
 	a.WriteJSON(w, http.StatusOK, map[string]any{
 		"successMessage": locale.TR(r, "login_successful"),
-		"user":           userResponse(result.User),
+		"user": map[string]any{
+			"id":          result.User.Id,
+			"name":        result.User.Name,
+			"email":       result.User.Email,
+			"role":        result.User.Role,
+			"isActive":    result.User.IsActive,
+			"avatar":      util.GravatarURL(result.User.Email, 80),
+			"language":    result.User.Language,
+			"theme":       result.User.Theme,
+			"lastLoginAt": result.User.LastLoginAt.UTC().Format(time.RFC3339),
+			"createdAt":   result.User.CreatedAt.UTC().Format(time.RFC3339),
+			"updatedAt":   result.User.UpdatedAt.UTC().Format(time.RFC3339),
+		},
 	})
 }

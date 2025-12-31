@@ -6,7 +6,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"time"
 )
 
@@ -38,6 +37,17 @@ func NewConfigRepository(db *sql.DB) ConfigRepository {
 	return &ConfigRepositoryPostgres{db: db}
 }
 
+// scanConfig maps a row into a config. Column order must match the select list.
+func scanConfig(o *Config) []any {
+	return []any{
+		&o.Id,
+		&o.Key,
+		&o.Value,
+		&o.CreatedAt,
+		&o.UpdatedAt,
+	}
+}
+
 // Create inserts a row
 func (r *ConfigRepositoryPostgres) Create(key, value string) error {
 	id, err := NewId()
@@ -56,19 +66,14 @@ func (r *ConfigRepositoryPostgres) Create(key, value string) error {
 
 // Get returns a config by key
 func (r *ConfigRepositoryPostgres) Get(key string) (*Config, error) {
-	o := &Config{}
-	err := r.db.QueryRow(
+	return QueryOne(
+		r.db,
 		`SELECT id, key, value #>> '{}', created_at, updated_at
 		FROM configs
 		WHERE key = $1`,
+		scanConfig,
 		key,
-	).Scan(&o.Id, &o.Key, &o.Value, &o.CreatedAt, &o.UpdatedAt)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
-	}
-
-	return o, err
+	)
 }
 
 // Update updates a config
@@ -97,27 +102,11 @@ func (r *ConfigRepositoryPostgres) Delete(key string) error {
 
 // List returns a list of configs. TODO: remove if not used in future.
 func (r *ConfigRepositoryPostgres) List() ([]*Config, error) {
-	rows, err := r.db.Query(
+	return QueryMany(
+		r.db,
 		`SELECT id, key, value #>> '{}', created_at, updated_at
 		FROM configs
 		ORDER BY key`,
+		scanConfig,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	var options []*Config
-	for rows.Next() {
-		o := &Config{}
-		err := rows.Scan(&o.Id, &o.Key, &o.Value, &o.CreatedAt, &o.UpdatedAt)
-		if err != nil {
-			return nil, err
-		}
-
-		options = append(options, o)
-	}
-
-	return options, rows.Err()
 }
