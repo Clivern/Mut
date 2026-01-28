@@ -12,36 +12,6 @@
       <div class="bg-white rounded-lg border border-theme-border p-8 shadow-sm">
         <form class="space-y-5" @submit.prevent="handleSetup">
           <div>
-            <label for="platform-name" class="block text-sm font-medium text-theme-text mb-2">
-              {{ $t('setup.platform_name') }}
-            </label>
-            <input
-              id="platform-name"
-              v-model="form.platformName"
-              type="text"
-              required
-              class="input-field"
-              :placeholder="$t('setup.platform_name_placeholder')"
-              :disabled="loading"
-            >
-          </div>
-
-          <div>
-            <label for="platform-url" class="block text-sm font-medium text-theme-text mb-2">
-              {{ $t('setup.platform_url') }}
-            </label>
-            <input
-              id="platform-url"
-              v-model="form.platformURL"
-              type="url"
-              required
-              class="input-field"
-              :placeholder="$t('setup.platform_url_placeholder')"
-              :disabled="loading"
-            >
-          </div>
-
-          <div>
             <label for="platform-email" class="block text-sm font-medium text-theme-text mb-2">
               {{ $t('setup.platform_email') }}
             </label>
@@ -53,58 +23,8 @@
               class="input-field"
               :placeholder="$t('setup.platform_email_placeholder')"
               :disabled="loading"
-            >
-          </div>
-
-          <div class="border-t border-theme-border pt-5">
-            <h2 class="text-sm font-semibold text-theme-text">{{ $t('setup.admin_section') }}</h2>
-          </div>
-
-          <div>
-            <label for="admin-name" class="block text-sm font-medium text-theme-text mb-2">
-              {{ $t('setup.admin_name') }}
-            </label>
-            <input
-              id="admin-name"
-              v-model="form.adminName"
-              type="text"
-              required
-              class="input-field"
-              :placeholder="$t('setup.admin_name_placeholder')"
-              :disabled="loading"
-            >
-          </div>
-
-          <div>
-            <label for="admin-email" class="block text-sm font-medium text-theme-text mb-2">
-              {{ $t('setup.admin_email') }}
-            </label>
-            <input
-              id="admin-email"
-              v-model="form.adminEmail"
-              type="email"
-              required
-              class="input-field"
-              :placeholder="$t('setup.admin_email_placeholder')"
-              :disabled="loading"
-            >
-          </div>
-
-          <div>
-            <label for="admin-password" class="block text-sm font-medium text-theme-text mb-2">
-              {{ $t('setup.admin_password') }}
-            </label>
-            <input
-              id="admin-password"
-              v-model="form.adminPassword"
-              type="password"
-              required
-              minlength="8"
-              autocomplete="new-password"
-              class="input-field"
-              :placeholder="$t('setup.admin_password_placeholder')"
-              :disabled="loading"
-            >
+            />
+            <p class="text-xs text-theme-textLight mt-1.5">{{ $t('setup.platform_email_hint') }}</p>
           </div>
 
           <div v-if="error" class="rounded-md border border-red-200 bg-red-50 p-3">
@@ -121,9 +41,17 @@
             >
               <span v-if="!loading">{{ $t('setup.submit') }}</span>
               <span v-else class="flex items-center justify-center">
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <svg
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 {{ $t('setup.submitting') }}
               </span>
@@ -151,12 +79,7 @@ import { errorText } from '@/lib/error'
 const { t } = useI18n()
 const router = useRouter()
 const form = reactive({
-  platformName: '',
-  platformURL: '',
   platformEmail: '',
-  adminName: '',
-  adminEmail: '',
-  adminPassword: ''
 })
 
 const loading = ref(false)
@@ -178,7 +101,9 @@ const handleSetup = async () => {
   error.value = null
 
   try {
-    await setup_api.install({ ...form })
+    await setup_api.install({
+      platformEmail: form.platformEmail,
+    })
 
     showFlash(t('common.saved'))
 

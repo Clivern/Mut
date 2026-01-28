@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS workspace_users (
+	id UUID PRIMARY KEY,
+	workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	role VARCHAR(20) NOT NULL DEFAULT 'regular',
+	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	UNIQUE (workspace_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_workspace_users_user_id ON workspace_users(user_id);

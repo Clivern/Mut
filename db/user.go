@@ -16,28 +16,35 @@ const (
 	UserRoleAdmin    = "admin"
 	UserRoleRegular  = "regular"
 	UserRoleReadOnly = "readonly"
-	UserLanguageEN   = "en"
-	UserLanguageFR   = "fr"
-	UserThemeDefault = "default"
-	UserThemeBlue    = "blue"
-	UserThemeSlate   = "slate"
-	UserThemeEmerald = "emerald"
-	UserThemeDark    = "dark"
+
+	UserProviderLocal  = "local"
+	UserProviderGithub = "github"
+	UserProviderGoogle = "google"
+	UserLanguageEN     = "en"
+	UserLanguageFR     = "fr"
+	UserThemeDefault   = "default"
+	UserThemeBlue      = "blue"
+	UserThemeSlate     = "slate"
+	UserThemeEmerald   = "emerald"
+	UserThemeDark      = "dark"
 )
 
 // User is the DB row for a user.
 type User struct {
-	Id          Id
-	Name        string
-	Email       string
-	Password    string
-	Role        string
-	IsActive    bool
-	LastLoginAt time.Time
-	Language    string
-	Theme       string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	Id              Id
+	Name            string
+	Email           string
+	Password        string
+	Provider        string
+	ProviderUserId  *string
+	Role            string
+	IsActive        bool
+	IsEmailVerified bool
+	LastLoginAt     time.Time
+	Language        string
+	Theme           string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 // UserRepository is the interface for user CRUD.
@@ -46,6 +53,7 @@ type UserRepository interface {
 	GetById(id Id) (*User, error)
 	GetByAPIKey(apiKey string) (*User, error)
 	GetByEmail(email string) (*User, error)
+	GetByProvider(provider, providerUserId string) (*User, error)
 	Update(user *User) error
 	UpdateLastLogin(id Id) error
 	Delete(id Id) error
@@ -95,8 +103,11 @@ func scanUser(user *User) []any {
 		&user.Name,
 		&user.Email,
 		&user.Password,
+		&user.Provider,
+		&user.ProviderUserId,
 		&user.Role,
 		&user.IsActive,
+		&user.IsEmailVerified,
 		&user.LastLoginAt,
 		&user.Language,
 		&user.Theme,
@@ -120,15 +131,20 @@ func (r *UserRepositoryPostgres) Create(user *User) error {
 
 	_, err := r.db.Exec(
 		`INSERT INTO users (
-			id, name, email, pwd_hash, role, is_active, last_login_at, language, theme
+			id, name, email, pwd_hash, provider, provider_user_id,
+			role, is_active, is_email_verified,
+			last_login_at, language, theme
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 		user.Id.String(),
 		user.Name,
 		user.Email,
 		user.Password,
+		user.Provider,
+		user.ProviderUserId,
 		user.Role,
 		user.IsActive,
+		user.IsEmailVerified,
 		user.LastLoginAt,
 		user.Language,
 		user.Theme,
@@ -142,7 +158,8 @@ func (r *UserRepositoryPostgres) GetById(id Id) (*User, error) {
 	return QueryOne(
 		r.db,
 		`SELECT
-			id, name, email, pwd_hash, role, is_active,
+			id, name, email, pwd_hash, provider, provider_user_id,
+			role, is_active, is_email_verified,
 			last_login_at, language, theme, created_at, updated_at
 		FROM users
 		WHERE id = $1`,
@@ -160,7 +177,8 @@ func (r *UserRepositoryPostgres) GetByAPIKey(apiKey string) (*User, error) {
 	return QueryOne(
 		r.db,
 		`SELECT
-			u.id, u.name, u.email, u.pwd_hash, u.role, u.is_active,
+			u.id, u.name, u.email, u.pwd_hash, u.provider, u.provider_user_id,
+			u.role, u.is_active, u.is_email_verified,
 			u.last_login_at, u.language, u.theme, u.created_at, u.updated_at
 		FROM users u
 		INNER JOIN user_api_keys k ON u.id = k.user_id
@@ -175,7 +193,8 @@ func (r *UserRepositoryPostgres) GetByEmail(email string) (*User, error) {
 	return QueryOne(
 		r.db,
 		`SELECT
-			id, name, email, pwd_hash, role, is_active,
+			id, name, email, pwd_hash, provider, provider_user_id,
+			role, is_active, is_email_verified,
 			last_login_at, language, theme, created_at, updated_at
 		FROM users
 		WHERE email = $1`,
@@ -192,18 +211,24 @@ func (r *UserRepositoryPostgres) Update(user *User) error {
 			name = $1,
 			email = $2,
 			pwd_hash = $3,
-			role = $4,
-			is_active = $5,
-			last_login_at = $6,
-			language = $7,
-			theme = $8,
-			updated_at = $9
-		WHERE id = $10`,
+			provider = $4,
+			provider_user_id = $5,
+			role = $6,
+			is_active = $7,
+			is_email_verified = $8,
+			last_login_at = $9,
+			language = $10,
+			theme = $11,
+			updated_at = $12
+		WHERE id = $13`,
 		user.Name,
 		user.Email,
 		user.Password,
+		user.Provider,
+		user.ProviderUserId,
 		user.Role,
 		user.IsActive,
+		user.IsEmailVerified,
 		user.LastLoginAt,
 		user.Language,
 		user.Theme,
@@ -212,6 +237,22 @@ func (r *UserRepositoryPostgres) Update(user *User) error {
 	)
 
 	return err
+}
+
+// GetByProvider returns a user by OAuth provider identity
+func (r *UserRepositoryPostgres) GetByProvider(provider, providerUserId string) (*User, error) {
+	return QueryOne(
+		r.db,
+		`SELECT
+			id, name, email, pwd_hash, provider, provider_user_id,
+			role, is_active, is_email_verified,
+			last_login_at, language, theme, created_at, updated_at
+		FROM users
+		WHERE provider = $1 AND provider_user_id = $2`,
+		scanUser,
+		provider,
+		providerUserId,
+	)
 }
 
 // UpdateLastLogin updates the last login timestamp
@@ -246,7 +287,8 @@ func (r *UserRepositoryPostgres) List(limit, offset int) ([]*User, error) {
 	return QueryMany(
 		r.db,
 		`SELECT
-			id, name, email, pwd_hash, role, is_active,
+			id, name, email, pwd_hash, provider, provider_user_id,
+			role, is_active, is_email_verified,
 			last_login_at, language, theme, created_at, updated_at
 		FROM users
 		ORDER BY created_at DESC

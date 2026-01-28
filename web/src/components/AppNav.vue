@@ -89,6 +89,14 @@
                 >
                   {{ $t('nav.profile') }}
                 </router-link>
+                <router-link
+                  to="/select-workspace"
+                  class="block px-4 py-2 text-sm text-theme-text hover:bg-theme-hover"
+                  role="menuitem"
+                  @click="open = false"
+                >
+                  {{ $t('nav.select_workspace') }}
+                </router-link>
                 <button
                   type="button"
                   class="block w-full px-4 py-2 text-left text-sm text-theme-text hover:bg-theme-hover"
@@ -112,6 +120,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { auth_api } from '@/api'
 import { user, clearUser } from '@/lib/auth'
+import { canManageWorkspace } from '@/lib/permission'
+import { loadWorkspaceFromStorage, removeWorkspaceFromStorage } from '@/utils/storage'
 import { applyLocale, applyTheme, applyUserPreferences, readStoredLocale, readStoredTheme } from '@/lib/preferences'
 import AppLogo from '@/components/AppLogo.vue'
 
@@ -134,12 +144,22 @@ function initPreferences() {
   applyLocale(readStoredLocale())
 }
 
+const canManageWorkspaceNav = computed(() => canManageWorkspace(user.value, loadWorkspaceFromStorage()))
+
 const navItems = computed(() => {
   return [
     { to: '/dashboard', label: t('nav.dashboard') },
+    { to: '/members', label: t('nav.members'), requiresManage: true },
+    { to: '/clusters', label: t('nav.clusters'), requiresManage: true },
+    { to: '/settings', label: t('nav.settings'), requiresManage: true },
+    { to: '/workspaces', label: t('workspaces.title') },
     { to: '/users', label: t('nav.users'), requiresAdmin: true },
-    { to: '/settings', label: t('nav.settings'), requiresAdmin: true }
-  ].filter((item) => !item.requiresAdmin || user.value?.role === 'admin')
+    { to: '/platform', label: t('nav.platform'), requiresAdmin: true }
+  ].filter(
+    (item) =>
+      (!item.requiresAdmin || user.value?.role === 'admin') &&
+      (!item.requiresManage || canManageWorkspaceNav.value),
+  )
 })
 
 function isActive(path) {
@@ -156,6 +176,7 @@ function toggleDropdown() {
 
 async function handleLogout() {
   open.value = false
+  removeWorkspaceFromStorage()
   clearUser()
 
   try {

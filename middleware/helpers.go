@@ -15,6 +15,12 @@ import (
 const (
 	// ContextKeyUser is the key for storing user in context
 	ContextKeyUser contextKey = "user"
+
+	// ContextKeyAccessKey is the key for storing a workspace access key in context
+	ContextKeyAccessKey contextKey = "access_key"
+
+	// ContextKeyWorkspace is the key for storing a loaded workspace in context
+	ContextKeyWorkspace contextKey = "workspace"
 )
 
 // IsAssetPath returns true if path is a static asset
@@ -38,4 +44,23 @@ func WithUserContext(ctx context.Context, user *db.User) context.Context {
 	ctx = module.WithPrincipal(ctx, &module.Principal{User: user})
 
 	return context.WithValue(ctx, ContextKeyUser, user)
+}
+
+// GetWorkspaceFromContext returns the workspace attached by Protect with Workspace: true.
+func GetWorkspaceFromContext(ctx context.Context) (*db.Workspace, bool) {
+	workspace, ok := ctx.Value(ContextKeyWorkspace).(*db.Workspace)
+
+	return workspace, ok && workspace != nil
+}
+
+// GetAccessKeyFromContext retrieves the workspace access key from the request context
+func GetAccessKeyFromContext(ctx context.Context) (*db.AccessKey, bool) {
+	key, ok := ctx.Value(ContextKeyAccessKey).(*db.AccessKey)
+
+	return key, ok
+}
+
+// WithAccessKeyContext sets the workspace access key in the request context
+func WithAccessKeyContext(ctx context.Context, key *db.AccessKey) context.Context {
+	return context.WithValue(ctx, ContextKeyAccessKey, key)
 }

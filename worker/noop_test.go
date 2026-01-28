@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/clivern/mut/db"
 	"github.com/clivern/mut/pkg/broker"
@@ -19,14 +20,20 @@ import (
 // recordingTasks captures the status calls the no-op handler makes.
 type recordingTasks struct {
 	db.AsyncTaskRepository
-	running   []db.Id
-	completed []db.Id
-	err       error
+	running      []db.Id
+	completed    []db.Id
+	pruneCutoffs []time.Time
+	err          error
 }
 
 func (f *recordingTasks) MarkRunning(id db.Id) error {
 	f.running = append(f.running, id)
 	return f.err
+}
+
+func (f *recordingTasks) DeleteFinishedBefore(before time.Time) (int64, error) {
+	f.pruneCutoffs = append(f.pruneCutoffs, before)
+	return 0, nil
 }
 
 func (f *recordingTasks) Complete(id db.Id, result string) error {

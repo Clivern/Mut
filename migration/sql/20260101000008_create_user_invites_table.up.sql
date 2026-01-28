@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS user_invites (
+	id UUID PRIMARY KEY,
+	email VARCHAR(255) NOT NULL,
+	role VARCHAR(20) NOT NULL DEFAULT 'regular',
+	token VARCHAR(100) NOT NULL UNIQUE,
+	status VARCHAR(20) NOT NULL DEFAULT 'pending',
+	inviter_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+	expires_at TIMESTAMP NOT NULL,
+	accepted_at TIMESTAMP NULL,
+	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+);
+CREATE INDEX IF NOT EXISTS idx_user_invites_token ON user_invites(token);
+CREATE INDEX IF NOT EXISTS idx_user_invites_workspace_id ON user_invites(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_user_invites_email ON user_invites(email);

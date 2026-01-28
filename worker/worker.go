@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"github.com/clivern/mut/db"
+	"github.com/clivern/mut/module"
 	"github.com/clivern/mut/pkg/broker"
 
 	"github.com/rs/zerolog/log"
@@ -30,18 +31,22 @@ var Registrations []Registration
 
 // Dependencies are the services required by worker handlers.
 type Dependencies struct {
-	Tasks db.AsyncTaskRepository
+	Tasks   db.AsyncTaskRepository
+	Cluster *module.Cluster
 }
 
 type handlers struct {
-	tasks db.AsyncTaskRepository
+	tasks   db.AsyncTaskRepository
+	cluster *module.Cluster
 }
 
 // Register attaches all worker handlers.
 func Register(deps Dependencies) {
-	h := &handlers{tasks: deps.Tasks}
+	h := &handlers{tasks: deps.Tasks, cluster: deps.Cluster}
 
 	On(db.AsyncTaskTypeNoop, h.HandleNoop)
+	On(db.AsyncTaskTypeCompactStates, h.HandleCompactStates)
+	On(db.AsyncTaskTypeAnalyzeStates, h.HandleAnalyzeStates)
 }
 
 // On registers a queue worker handler for subject.

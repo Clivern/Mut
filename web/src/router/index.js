@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { loadUserFromStorage } from '@/utils/storage'
+import { loadUserFromStorage, loadWorkspaceFromStorage } from '@/utils/storage'
+import { canManageWorkspace } from '@/lib/permission'
 
 const routes = [
   {
@@ -22,7 +23,43 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/views/Dashboard.vue'),
-    meta: { requiresAuth: true, title: 'Dashboard', description: 'Platform dashboard' }
+    meta: { requiresAuth: true, requiresWorkspace: true, title: 'Dashboard', description: 'Platform dashboard' }
+  },
+  {
+    path: '/select-workspace',
+    name: 'SwitchWorkspaces',
+    component: () => import('@/views/SelectWorkspace.vue'),
+    meta: { requiresAuth: true, title: 'Switch Workspaces', description: 'Choose or create a workspace' }
+  },
+  {
+    path: '/workspaces',
+    name: 'Workspaces',
+    component: () => import('@/views/Workspaces.vue'),
+    meta: { requiresAuth: true, title: 'Workspaces', description: 'Manage your workspaces' }
+  },
+  {
+    path: '/members',
+    name: 'Members',
+    component: () => import('@/views/Members.vue'),
+    meta: { requiresAuth: true, requiresWorkspace: true, requiresWorkspaceAdmin: true, title: 'Members', description: 'Workspace members' }
+  },
+  {
+    path: '/clusters',
+    name: 'Clusters',
+    component: () => import('@/views/Clusters.vue'),
+    meta: { requiresAuth: true, requiresWorkspace: true, requiresWorkspaceAdmin: true, title: 'Clusters', description: 'Workspace clusters' }
+  },
+  {
+    path: '/clusters/:clusterId',
+    name: 'ClusterDetail',
+    component: () => import('@/views/ClusterDetail.vue'),
+    meta: { requiresAuth: true, requiresWorkspace: true, title: 'Cluster', description: 'Cluster dashboard' }
+  },
+  {
+    path: '/settings',
+    name: 'WorkspaceSettings',
+    component: () => import('@/views/WorkspaceSettings.vue'),
+    meta: { requiresAuth: true, requiresWorkspace: true, requiresWorkspaceAdmin: true, title: 'Settings', description: 'Workspace settings' }
   },
   {
     path: '/profile',
@@ -37,10 +74,10 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true, title: 'Users', description: 'Platform users' }
   },
   {
-    path: '/settings',
-    name: 'Settings',
-    component: () => import('@/views/Settings.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Settings', description: 'Settings' }
+    path: '/platform',
+    name: 'PlatformSettings',
+    component: () => import('@/views/PlatformSettings.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Platform', description: 'Platform settings' }
   },
   {
     path: '/404',
@@ -90,9 +127,15 @@ router.beforeEach((to) => {
   }
   if (to.meta.requiresGuest && isAuthenticated) {
     const redirect = to.query.redirect
-    return isSafeRedirect(redirect) ? redirect : '/dashboard'
+    return isSafeRedirect(redirect) ? redirect : '/select-workspace'
+  }
+  if (to.meta.requiresWorkspace && !loadWorkspaceFromStorage()) {
+    return '/select-workspace'
   }
   if (to.meta.requiresAdmin && currentUser?.role !== 'admin') {
+    return '/404'
+  }
+  if (to.meta.requiresWorkspaceAdmin && !canManageWorkspace(currentUser, loadWorkspaceFromStorage())) {
     return '/404'
   }
 })

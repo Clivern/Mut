@@ -1,0 +1,60 @@
+name: Agent Release
+
+on:
+  push:
+    tags:
+      - "agent/v*"
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: 1.27.3
+      - name: Set release version from agent tag
+        run: echo "GORELEASER_CURRENT_TAG=${GITHUB_REF_NAME#agent/}" >> "$GITHUB_ENV"
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          version: latest
+          args: release --clean
+          workdir: agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  push_to_registry:
+    name: Push agent image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@6862ffc5ab2cdb4405cf318a62a6f4c066e2298b
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
+        with:
+          images: clivern/mut-agent
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d
+        with:
+          context: agent
+          file: ./agent/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

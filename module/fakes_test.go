@@ -47,6 +47,16 @@ func (f *fakeUsers) GetByEmail(email string) (*db.User, error) {
 	return nil, f.err
 }
 
+func (f *fakeUsers) GetByProvider(provider, providerUserId string) (*db.User, error) {
+	for _, user := range f.byId {
+		if user.Provider == provider && user.ProviderUserId != nil && *user.ProviderUserId == providerUserId {
+			return user, f.err
+		}
+	}
+
+	return nil, f.err
+}
+
 func (f *fakeUsers) Update(user *db.User) error {
 	f.updated = append(f.updated, user)
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -48,17 +49,24 @@ type ListUsersResult struct {
 	Total int64
 }
 
+// UserMailer sends account emails.
+type UserMailer interface {
+	SendWelcomeEmail(to, name, loginLink, platformName string) error
+}
+
 // User handles user management.
 type User struct {
 	UserRepository    db.UserRepository
 	SessionRepository db.SessionRepository
+	Mailer            UserMailer
 }
 
-// NewUser creates a User module with the given repositories.
-func NewUser(users db.UserRepository, sessions db.SessionRepository) *User {
+// NewUser creates a User module with the given repositories and mailer.
+func NewUser(users db.UserRepository, sessions db.SessionRepository, mailer UserMailer) *User {
 	return &User{
 		UserRepository:    users,
 		SessionRepository: sessions,
+		Mailer:            mailer,
 	}
 }
 
@@ -116,6 +124,17 @@ func (u *User) CreateUser(req *CreateUserRequest) (*db.User, error) {
 	log.Info().
 		Str("userId", user.Id.String()).
 		Msg("User created")
+
+	if created.IsActive {
+		err = u.Mailer.SendWelcomeEmail(created.Email, created.Name, util.AppURL("/login"), viper.GetString("app.name"))
+		if err != nil {
+			log.Warn().
+				Err(err).
+				Str("userId", created.Id.String()).
+				Str("email", created.Email).
+				Msg("Failed to send welcome email; user was created")
+		}
+	}
 
 	return created, nil
 }

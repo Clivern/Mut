@@ -18,8 +18,11 @@ Every table has a UUID `id` primary key. Tables suffixed `_meta` are key/value e
 | `name` | VARCHAR(60) | no |  |  |
 | `email` | VARCHAR(60) | no |  | unique |
 | `pwd_hash` | VARCHAR(200) | no |  |  |
+| `provider` | VARCHAR(20) | no | `'local'` |  |
+| `provider_user_id` | VARCHAR(255) | yes |  |  |
 | `role` | VARCHAR(20) | no | `'regular'` |  |
 | `is_active` | BOOLEAN | yes | `true` |  |
+| `is_email_verified` | BOOLEAN | yes | `false` |  |
 | `last_login_at` | TIMESTAMP | yes |  |  |
 | `language` | VARCHAR(20) | no | `'en'` |  |
 | `theme` | VARCHAR(20) | no | `'default'` |  |
@@ -71,6 +74,20 @@ Every table has a UUID `id` primary key. Tables suffixed `_meta` are key/value e
 
 - Index: `idx_user_api_keys_token` on `(token)`
 
+## Global
+
+### `configs`
+
+| Column | Type | Nullable | Default | Notes |
+|---|---|---|---|---|
+| `id` | UUID | no |  | primary key |
+| `key` | VARCHAR(60) | no |  | unique |
+| `value` | JSONB | yes |  |  |
+| `created_at` | TIMESTAMP | yes | `now() UTC` |  |
+| `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
+
+- Index: `idx_configs_key` on `(key)`
+
 ## Ops
 
 ### `async_tasks`
@@ -105,20 +122,6 @@ Every table has a UUID `id` primary key. Tables suffixed `_meta` are key/value e
 | `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
 
 - Unique: `(async_task_id, key)`
-
-## Global
-
-### `configs`
-
-| Column | Type | Nullable | Default | Notes |
-|---|---|---|---|---|
-| `id` | UUID | no |  | primary key |
-| `key` | VARCHAR(60) | no |  | unique |
-| `value` | JSONB | yes |  |  |
-| `created_at` | TIMESTAMP | yes | `now() UTC` |  |
-| `updated_at` | TIMESTAMP | yes | `now() UTC` |  |
-
-- Index: `idx_configs_key` on `(key)`
 
 ## Relationships
 

@@ -14,18 +14,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type fakeUserMailer struct {
+	sent []string
+	err  error
+}
+
+func (f *fakeUserMailer) SendWelcomeEmail(to, _, _, _ string) error {
+	f.sent = append(f.sent, to)
+
+	return f.err
+}
+
 func TestUnitUser(t *testing.T) {
-	newUser := func() (*User, *fakeUsers, *fakeSessions) {
+	newUser := func() (*User, *fakeUsers, *fakeSessions, *fakeUserMailer) {
 		users := &fakeUsers{byId: map[db.Id]*db.User{
 			"u-1": {Id: "u-1", Name: "Admin", Email: "admin@example.com", Password: "hash", Role: db.UserRoleAdmin, IsActive: true},
 		}}
 		sessions := &fakeSessions{}
+		mailer := &fakeUserMailer{}
 
-		return NewUser(users, sessions), users, sessions
+		return NewUser(users, sessions, mailer), users, sessions, mailer
 	}
 
 	t.Run("create hashes the password", func(t *testing.T) {
-		module, users, _ := newUser()
+		module, users, _, mailer := newUser()
 
 		user, err := module.CreateUser(&CreateUserRequest{
 			Name:     "Ops",
@@ -39,24 +51,40 @@ func TestUnitUser(t *testing.T) {
 		require.Len(t, users.created, 1)
 		assert.Equal(t, "ops@example.com", user.Email)
 		assert.True(t, util.ComparePassword(user.Password, "Secret#123"))
+		assert.Equal(t, []string{"ops@example.com"}, mailer.sent)
+	})
+
+	t.Run("create does not send a welcome email for an inactive user", func(t *testing.T) {
+		module, _, _, mailer := newUser()
+
+		_, err := module.CreateUser(&CreateUserRequest{
+			Name:     "Later",
+			Email:    "later@example.com",
+			Password: "Secret#123",
+			Role:     db.UserRoleRegular,
+			IsActive: false,
+		})
+		require.NoError(t, err)
+
+		assert.Empty(t, mailer.sent)
 	})
 
 	t.Run("create rejects a duplicate email", func(t *testing.T) {
-		module, _, _ := newUser()
+		module, _, _, _ := newUser()
 
 		_, err := module.CreateUser(&CreateUserRequest{Name: "Dup", Email: "admin@example.com", Password: "Secret#123", Role: db.UserRoleRegular})
 		assert.ErrorIs(t, err, ErrUserEmailAlreadyExists)
 	})
 
 	t.Run("get returns not found for an unknown user", func(t *testing.T) {
-		module, _, _ := newUser()
+		module, _, _, _ := newUser()
 
 		_, err := module.GetUser("missing")
 		assert.ErrorIs(t, err, ErrUserNotFound)
 	})
 
 	t.Run("update keeps the password when empty and revokes sessions on deactivate", func(t *testing.T) {
-		module, users, sessions := newUser()
+		module, users, sessions, _ := newUser()
 
 		user, err := module.UpdateUser("u-1", &UpdateUserRequest{
 			Name:     "Renamed",
@@ -73,7 +101,7 @@ func TestUnitUser(t *testing.T) {
 	})
 
 	t.Run("delete refuses to remove the current user", func(t *testing.T) {
-		module, users, _ := newUser()
+		module, users, _, _ := newUser()
 		current := users.byId["u-1"]
 
 		assert.ErrorIs(t, module.DeleteUser("u-1", current), ErrCannotDeleteSelf)
@@ -81,7 +109,7 @@ func TestUnitUser(t *testing.T) {
 	})
 
 	t.Run("list returns users and total", func(t *testing.T) {
-		module, _, _ := newUser()
+		module, _, _, _ := newUser()
 
 		result, err := module.ListUsers(10, 0)
 		require.NoError(t, err)

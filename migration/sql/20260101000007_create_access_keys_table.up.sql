@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS access_keys (
+	id UUID PRIMARY KEY,
+	workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+	name VARCHAR(60) NOT NULL,
+	key_hash VARCHAR(64) NOT NULL UNIQUE,
+	key_suffix VARCHAR(4) NOT NULL,
+	permissions VARCHAR(255) NOT NULL DEFAULT '',
+	expires_at TIMESTAMP NULL,
+	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+);
+CREATE INDEX IF NOT EXISTS idx_access_keys_workspace_id ON access_keys(workspace_id);

@@ -1,4 +1,5 @@
 const USER_STORAGE_KEY = 'mut_user'
+const WORKSPACE_STORAGE_KEY = 'mut_workspace'
 
 export const loadUserFromStorage = () => {
   try {
@@ -25,5 +26,33 @@ export const removeUserFromStorage = () => {
     localStorage.removeItem(USER_STORAGE_KEY)
   } catch (err) {
     console.error('Failed to clear user from localStorage:', err)
+  }
+}
+
+export const loadWorkspaceFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(WORKSPACE_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch (err) {
+    console.error('Failed to load workspace from localStorage:', err)
+    return null
+  }
+}
+
+export const saveWorkspaceToStorage = (workspace) => {
+  try {
+    if (workspace) {
+      localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(workspace))
+    }
+  } catch (err) {
+    console.error('Failed to save workspace to localStorage:', err)
+  }
+}
+
+export const removeWorkspaceFromStorage = () => {
+  try {
+    localStorage.removeItem(WORKSPACE_STORAGE_KEY)
+  } catch (err) {
+    console.error('Failed to clear workspace from localStorage:', err)
   }
 }

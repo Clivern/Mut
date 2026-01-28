@@ -56,6 +56,33 @@ func Auth() func(http.Handler) http.Handler {
 				return
 			}
 
+			// Workspace Access Key Check
+			accessKeyValue := r.Header.Get("X-Access-Key")
+			if lo.IsNotEmpty(accessKeyValue) {
+				accessKey, err := module.NewAccessKey(
+					db.NewAccessKeyRepository(db.GetDB()),
+					db.NewWorkspaceRepository(db.GetDB()),
+				).AuthenticateAccessKey(accessKeyValue)
+				if err != nil {
+					log.Info().
+						Err(err).
+						Str("path", r.URL.Path).
+						Msg("Access key validation failed")
+					util.WriteJSON(w, http.StatusUnauthorized, map[string]interface{}{
+						"errorMessage": locale.TR(r, "invalid_access_key"),
+					})
+					return
+				}
+
+				log.Info().
+					Str("path", r.URL.Path).
+					Msg("Access key validated")
+
+				ctx := WithAccessKeyContext(r.Context(), accessKey)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
 			// Session Token Check
 			sessionToken := util.GetCookie(r, "_mut_session")
 			if lo.IsEmpty(sessionToken) {

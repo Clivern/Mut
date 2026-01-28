@@ -10,6 +10,13 @@ app:
   encryption:
     key: ${MUT_ENCRYPTION_KEY:-}
 
+  ai:
+    api_key: ${MUT_AI_API_KEY:-}
+    llm:
+      model: ${MUT_AI_LLM_MODEL:-openai/gpt-4o}
+    embed:
+      model: ${MUT_AI_EMBED_MODEL:-openai/text-embedding-3-small}
+
   metrics:
     username: ${MUT_SERVER_PROM_METRICS_USERNAME:-admin}
     secret: ${MUT_SERVER_PROM_METRICS_SECRET:-secret}

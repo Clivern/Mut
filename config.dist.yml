@@ -10,6 +10,26 @@ app:
   encryption:
     key: ${MUT_ENCRYPTION_KEY:-}
 
+  mailer:
+    from: ${MUT_MAILER_FROM:-no_reply@clivern.com}
+    resend:
+      api_key: ${MUT_RESEND_API_KEY:-}
+
+  ai:
+    api_key: ${MUT_AI_API_KEY:-}
+    llm:
+      model: ${MUT_AI_LLM_MODEL:-openai/gpt-4o}
+    embed:
+      model: ${MUT_AI_EMBED_MODEL:-openai/text-embedding-3-small}
+
+  oauth:
+    github:
+      client_id: ${MUT_OAUTH_GITHUB_CLIENT_ID:-}
+      client_secret: ${MUT_OAUTH_GITHUB_CLIENT_SECRET:-}
+    google:
+      client_id: ${MUT_OAUTH_GOOGLE_CLIENT_ID:-}
+      client_secret: ${MUT_OAUTH_GOOGLE_CLIENT_SECRET:-}
+
   metrics:
     username: ${MUT_SERVER_PROM_METRICS_USERNAME:-admin}
     secret: ${MUT_SERVER_PROM_METRICS_SECRET:-secret}

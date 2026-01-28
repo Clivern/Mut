@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS chats (
+	id UUID PRIMARY KEY,
+	workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	cluster_id VARCHAR(64) NOT NULL DEFAULT '',
+	title VARCHAR(120) NOT NULL DEFAULT '',
+	status VARCHAR(20) NOT NULL DEFAULT 'idle',
+	created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+	updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+);
+CREATE INDEX IF NOT EXISTS idx_chats_workspace_user_updated_at ON chats (workspace_id, user_id, updated_at DESC);

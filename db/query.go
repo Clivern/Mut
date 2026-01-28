@@ -15,8 +15,7 @@ type querier interface {
 	QueryRow(query string, args ...any) *sql.Row
 }
 
-// QueryOne runs query and scans the single row into a new T.
-// A missing row returns nil, nil.
+// QueryOne runs query and scans the single row into a new T. A missing row returns nil, nil.
 func QueryOne[T any](db querier, query string, scan func(*T) []any, args ...any) (*T, error) {
 	item := new(T)
 	err := db.QueryRow(query, args...).Scan(scan(item)...)

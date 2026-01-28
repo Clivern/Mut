@@ -30,6 +30,33 @@ msgstr "Failed to delete user."
 msgid "failed_get_api_key"
 msgstr "Failed to get API key."
 
+msgid "failed_save_cluster_state"
+msgstr "Failed to save cluster state."
+
+msgid "failed_get_cluster_state"
+msgstr "Failed to get cluster state."
+
+msgid "chat_not_configured"
+msgstr "The assistant is not configured yet. Ask an admin to set up its AI key."
+
+msgid "chat_busy"
+msgstr "The assistant is still answering this chat."
+
+msgid "chat_not_found"
+msgstr "Chat not found."
+
+msgid "failed_chat_request"
+msgstr "The assistant request failed. Try again."
+
+msgid "cluster_state_not_found"
+msgstr "No state has been collected for this cluster yet."
+
+msgid "failed_cluster_request"
+msgstr "The cluster request failed. Try again."
+
+msgid "cluster_not_found"
+msgstr "Cluster not found."
+
 msgid "failed_get_me"
 msgstr "Failed to get authenticated principal."
 
@@ -125,3 +152,90 @@ msgstr "User not found."
 
 msgid "user_updated_successfully"
 msgstr "User updated successfully."
+
+msgid "failed_create_workspace"
+msgstr "Failed to create workspace."
+
+msgid "failed_list_workspaces"
+msgstr "Failed to list workspaces."
+
+msgid "failed_get_workspace"
+msgstr "Failed to get workspace."
+
+msgid "failed_update_workspace"
+msgstr "Failed to update workspace."
+
+msgid "failed_delete_workspace"
+msgstr "Failed to delete workspace."
+
+msgid "workspace_not_found"
+msgstr "Workspace not found."
+
+msgid "workspace_forbidden"
+msgstr "You do not have permission to change this workspace."
+
+msgid "workspace_deleted_successfully"
+msgstr "Workspace deleted successfully."
+
+msgid "failed_create_access_key"
+msgstr "Failed to create access key."
+
+msgid "failed_list_access_keys"
+msgstr "Failed to list access keys."
+
+msgid "failed_get_access_key"
+msgstr "Failed to get access key."
+
+msgid "failed_delete_access_key"
+msgstr "Failed to delete access key."
+
+msgid "access_key_not_found"
+msgstr "Access key not found."
+
+msgid "invalid_access_key"
+msgstr "Invalid access key."
+
+msgid "failed_list_workspace_members"
+msgstr "Failed to list workspace members."
+
+msgid "failed_update_workspace_member"
+msgstr "Failed to update workspace member."
+
+msgid "failed_remove_workspace_member"
+msgstr "Failed to remove workspace member."
+
+msgid "workspace_member_not_found"
+msgstr "Workspace member not found."
+
+msgid "workspace_owner_protected"
+msgstr "The workspace owner cannot be changed or removed."
+
+msgid "failed_create_invite"
+msgstr "Failed to create invite."
+
+msgid "failed_list_invites"
+msgstr "Failed to list invites."
+
+msgid "failed_get_invite"
+msgstr "Failed to get invite."
+
+msgid "failed_delete_invite"
+msgstr "Failed to delete invite."
+
+msgid "invite_not_found"
+msgstr "Invite not found."
+
+msgid "pending_invite_already_exists"
+msgstr "A pending invite already exists for this email."
+
+msgid "user_already_workspace_member"
+msgstr "This user is already a member of the workspace."
+
+msgid "failed_check_access"
+msgstr "Failed to check access."
+
+msgid "failed_load_workspace"
+msgstr "Failed to load workspace."
+
+msgid "invalid_route_configuration"
+msgstr "Invalid route configuration."

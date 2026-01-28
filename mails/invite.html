@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #F7F6F3;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #F7F6F3; padding: 24px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border: 1px solid #E3E2E0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+          <tr>
+            <td align="center" style="padding: 32px 32px 8px 32px;">
+              <p style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; color: #37352F;">{{.PlatformName}}</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 8px 32px 24px 32px; text-align: center;">
+              <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 600; color: #37352F;">You're invited to {{.PlatformName}}</h1>
+              <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #6B6966;">You have been invited to join <strong style="color: #37352F;">{{.PlatformName}}</strong>. Sign in with GitHub or Google using this email address to get access. This link expires in 7 days.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 8px 32px 24px 32px; text-align: center;">
+              <a href="{{.InviteLink}}" style="display: inline-block; padding: 12px 24px; font-size: 15px; font-weight: 500; color: #ffffff; background-color: #37352F; text-decoration: none; border-radius: 6px;">Sign in</a>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding: 0 32px 32px 32px; font-size: 13px; line-height: 1.5; color: #6B6966; text-align: center;">
+              <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="margin: 8px 0 0 0; word-break: break-all;"><a href="{{.InviteLink}}" style="color: #37352F;">{{.InviteLink}}</a></p>
+              <p style="margin: 24px 0 0 0;">If you didn't expect this email, you can ignore it.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

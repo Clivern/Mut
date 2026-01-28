@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/clivern/mut/db"
+	"github.com/clivern/mut/module"
 	"github.com/clivern/mut/pkg/broker"
 	"github.com/clivern/mut/worker"
 
@@ -45,6 +46,11 @@ func RunWorker() error {
 
 	worker.Register(worker.Dependencies{
 		Tasks: db.NewAsyncTaskRepository(db.GetDB(true)),
+		Cluster: module.NewCluster(
+			db.NewClusterRepository(db.GetDB(true)),
+			db.NewClusterStateRepository(db.GetDB(true)),
+			db.NewWorkspaceRepository(db.GetDB(true)),
+		),
 	})
 
 	err = worker.Bind(client, nats.Queue)

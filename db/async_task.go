@@ -15,7 +15,9 @@ const (
 	AsyncTaskStatusCompleted = "completed"
 	AsyncTaskStatusFailed    = "failed"
 
-	AsyncTaskTypeNoop = "mut.noop"
+	AsyncTaskTypeNoop          = "mut.noop"
+	AsyncTaskTypeCompactStates = "mut.compact_states"
+	AsyncTaskTypeAnalyzeStates = "mut.analyze_states"
 )
 
 // AsyncTask is a single row in the async_tasks table.
@@ -37,6 +39,7 @@ type AsyncTask struct {
 
 // AsyncTaskRepository is the interface for async task persistence.
 type AsyncTaskRepository interface {
+	DeleteFinishedBefore(before time.Time) (int64, error)
 	Create(task *AsyncTask) error
 	MarkRunning(id Id) error
 	Complete(id Id, result string) error
@@ -89,6 +92,19 @@ func (r *AsyncTaskRepositoryPostgres) Create(task *AsyncTask) error {
 	).Scan(&task.CreatedAt, &task.UpdatedAt)
 
 	return err
+}
+
+// DeleteFinishedBefore removes completed and failed tasks created before the given time and returns how many it removed
+func (r *AsyncTaskRepositoryPostgres) DeleteFinishedBefore(before time.Time) (int64, error) {
+	result, err := r.db.Exec(
+		`DELETE FROM async_tasks WHERE status IN ($1, $2) AND created_at < $3`,
+		AsyncTaskStatusCompleted, AsyncTaskStatusFailed, before.UTC(),
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
 }
 
 // MarkRunning sets a task to running.

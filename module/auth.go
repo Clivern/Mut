@@ -21,7 +21,6 @@ import (
 )
 
 var (
-	ErrInvalidCredentials     = errors.New("invalid credentials")
 	ErrAccountNotActive       = errors.New("account not active")
 	ErrMaintenanceModeEnabled = errors.New("maintenance mode enabled")
 	ErrFailedCheckMaintenance = errors.New("failed check maintenance")
@@ -33,18 +32,19 @@ var (
 	ErrFailedRevokeSessions = errors.New("failed revoke sessions")
 )
 
-// LoginRequest is the body for a password login.
-type LoginRequest struct {
-	Email      string `json:"email" validate:"required,email" label:"Email"`
-	Password   string `json:"password" validate:"required" label:"Password"`
-	RememberMe bool   `json:"rememberMe" label:"Remember Me"`
-}
-
 // LoginResult is returned on a successful login.
 type LoginResult struct {
 	User          *db.User
 	Session       *db.Session
 	CookieOptions *util.CookieOptions
+}
+
+// OAuthIdentity is a verified identity from an OAuth provider.
+type OAuthIdentity struct {
+	Provider       string
+	ProviderUserID string
+	Email          string
+	Name           string
 }
 
 // Auth handles user authentication and sessions.
@@ -63,26 +63,109 @@ func NewAuth(users db.UserRepository, sessions db.SessionRepository, config db.C
 	}
 }
 
-// Login authenticates a user by email and password and creates a session.
-func (a *Auth) Login(ctx context.Context, req *LoginRequest) (*LoginResult, error) {
-	user, err := a.UserRepository.GetByEmail(req.Email)
+// LoginWithOAuth finds or creates a user from an OAuth identity and opens a session.
+func (a *Auth) LoginWithOAuth(ctx context.Context, identity *OAuthIdentity) (*LoginResult, error) {
+	user, err := a.UserRepository.GetByProvider(identity.Provider, identity.ProviderUserID)
 	if err != nil {
 		log.Error().
 			Err(err).
-			Str("email", req.Email).
-			Msg("Failed to get user")
-		return nil, fmt.Errorf("get user: %w", err)
+			Str("provider", identity.Provider).
+			Msg("Failed to get user by provider")
+		return nil, fmt.Errorf("get user by provider: %w", err)
 	}
-	if user == nil || !util.ComparePassword(user.Password, req.Password) {
+
+	foundByProvider := user != nil
+
+	if user == nil {
+		user, err = a.UserRepository.GetByEmail(identity.Email)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("provider", identity.Provider).
+				Msg("Failed to get user by email")
+			return nil, fmt.Errorf("get user by email: %w", err)
+		}
+	}
+
+	if user != nil && !foundByProvider && (user.Provider == db.UserProviderLocal || lo.IsEmpty(user.Provider)) {
+		providerUserID := identity.ProviderUserID
+		user.Provider = identity.Provider
+		user.ProviderUserId = &providerUserID
+		user.IsEmailVerified = true
+		if lo.IsNotEmpty(identity.Name) {
+			user.Name = identity.Name
+		}
+
+		err = a.UserRepository.Update(user)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("userId", user.Id.String()).
+				Str("provider", identity.Provider).
+				Msg("Failed to convert local user to oauth")
+			return nil, fmt.Errorf("convert local user to oauth: %w", err)
+		}
+
 		log.Info().
-			Str("email", req.Email).
-			Msg("Login rejected for invalid credentials")
-		return nil, ErrInvalidCredentials
+			Str("userId", user.Id.String()).
+			Str("provider", identity.Provider).
+			Msg("Local user converted to oauth")
 	}
+
+	if user == nil {
+		pwd, err := util.GenerateSecureToken(20)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("provider", identity.Provider).
+				Msg("Failed to generate oauth password")
+			return nil, fmt.Errorf("generate oauth password: %w", err)
+		}
+
+		hpass, err := util.HashPassword(pwd)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("provider", identity.Provider).
+				Msg("Failed to hash oauth password")
+			return nil, fmt.Errorf("hash oauth password: %w", err)
+		}
+
+		now := time.Now().UTC()
+		providerUserID := identity.ProviderUserID
+		user = &db.User{
+			Name:            GetDisplayName(identity),
+			Email:           identity.Email,
+			Password:        hpass,
+			Provider:        identity.Provider,
+			ProviderUserId:  &providerUserID,
+			Role:            db.UserRoleRegular,
+			IsActive:        true,
+			IsEmailVerified: true,
+			LastLoginAt:     now,
+			Language:        db.UserLanguageEN,
+			Theme:           db.UserThemeDefault,
+		}
+
+		err = a.UserRepository.Create(user)
+		if err != nil {
+			log.Error().
+				Err(err).
+				Str("provider", identity.Provider).
+				Msg("Failed to create oauth user")
+			return nil, fmt.Errorf("create oauth user: %w", err)
+		}
+
+		log.Info().
+			Str("userId", user.Id.String()).
+			Str("provider", identity.Provider).
+			Msg("OAuth user created")
+	}
+
 	if !user.IsActive {
 		log.Warn().
 			Str("userId", user.Id.String()).
-			Msg("Login rejected for inactive user")
+			Msg("OAuth login rejected for inactive user")
 		return nil, ErrAccountNotActive
 	}
 
@@ -119,11 +202,10 @@ func (a *Auth) Login(ctx context.Context, req *LoginRequest) (*LoginResult, erro
 		return nil, fmt.Errorf("%w: %v", ErrFailedCreateSession, err)
 	}
 
-	duration := lo.Ternary(req.RememberMe, conf.RememberMeSessionDuration, conf.DefaultSessionDuration)
 	session := &db.Session{
 		Token:     token,
 		UserId:    user.Id,
-		ExpiresAt: time.Now().UTC().Add(duration),
+		ExpiresAt: time.Now().UTC().Add(conf.DefaultSessionDuration),
 	}
 
 	if appCtx, ok := AppCtxFrom(ctx); ok {
@@ -154,13 +236,22 @@ func (a *Auth) Login(ctx context.Context, req *LoginRequest) (*LoginResult, erro
 		util.SecureCookieOptions(),
 		util.DefaultCookieOptions(),
 	)
-	cookieOptions.MaxAge = lo.Ternary(req.RememberMe, int(conf.RememberMeSessionDuration/time.Second), 0)
 
 	return &LoginResult{
 		User:          user,
 		Session:       session,
 		CookieOptions: cookieOptions,
 	}, nil
+}
+
+// GetDisplayName prefers the provider name and falls back to the email local part.
+func GetDisplayName(identity *OAuthIdentity) string {
+	name := identity.Name
+	if lo.IsEmpty(name) {
+		name, _, _ = strings.Cut(identity.Email, "@")
+	}
+
+	return name
 }
 
 // LogoutByToken revokes all sessions of the user that owns the session token.

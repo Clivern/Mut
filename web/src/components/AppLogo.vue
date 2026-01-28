@@ -7,15 +7,10 @@
     :aria-label="alt || undefined"
     :aria-hidden="alt ? undefined : true"
   >
-    <rect x="90" y="90" width="92" height="92" rx="22" />
-    <rect x="210" y="90" width="92" height="92" rx="22" />
-    <rect x="330" y="90" width="92" height="92" rx="22" />
-    <rect x="90" y="210" width="92" height="92" rx="22" />
-    <rect x="210" y="210" width="92" height="92" rx="22" />
-    <rect x="330" y="210" width="92" height="92" rx="22" />
-    <rect x="90" y="330" width="92" height="92" rx="22" />
-    <rect x="210" y="330" width="92" height="92" rx="22" />
-    <rect x="342" y="342" width="92" height="92" rx="22" fill="#F5B700" transform="rotate(14 388 388)" />
+    <rect x="80" y="80" width="160" height="160" rx="38" />
+    <rect x="272" y="80" width="160" height="160" rx="38" />
+    <rect x="80" y="272" width="160" height="160" rx="38" />
+    <rect x="272" y="272" width="160" height="160" rx="38" fill="#F5B700" transform="rotate(14 352 352)" />
   </svg>
 </template>
 

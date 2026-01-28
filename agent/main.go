@@ -1,0 +1,25 @@
+// Copyright 2025 Clivern. All rights reserved.
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE file.
+
+package main
+
+import (
+	"github.com/clivern/mut/agent/cli"
+)
+
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+	builtBy = "unknown"
+)
+
+func main() {
+	cli.Version = version
+	cli.Commit = commit
+	cli.Date = date
+	cli.BuiltBy = builtBy
+
+	cli.Execute()
+}

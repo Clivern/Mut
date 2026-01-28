@@ -30,6 +30,33 @@ msgstr "Impossible de supprimer l'utilisateur."
 msgid "failed_get_api_key"
 msgstr "Impossible de récupérer la clé API."
 
+msgid "failed_save_cluster_state"
+msgstr "Impossible d'enregistrer l'état du cluster."
+
+msgid "failed_get_cluster_state"
+msgstr "Impossible de récupérer l'état du cluster."
+
+msgid "chat_not_configured"
+msgstr "L'assistant n'est pas encore configuré. Demandez à un administrateur de définir sa clé IA."
+
+msgid "chat_busy"
+msgstr "L'assistant répond encore à cette conversation."
+
+msgid "chat_not_found"
+msgstr "Conversation introuvable."
+
+msgid "failed_chat_request"
+msgstr "La demande à l'assistant a échoué. Réessayez."
+
+msgid "cluster_state_not_found"
+msgstr "Aucun état n'a encore été collecté pour ce cluster."
+
+msgid "failed_cluster_request"
+msgstr "La demande de cluster a échoué. Réessayez."
+
+msgid "cluster_not_found"
+msgstr "Cluster introuvable."
+
 msgid "failed_get_me"
 msgstr "Impossible de récupérer le principal authentifié."
 
@@ -125,3 +152,90 @@ msgstr "Utilisateur introuvable."
 
 msgid "user_updated_successfully"
 msgstr "Utilisateur mis à jour avec succès."
+
+msgid "failed_create_workspace"
+msgstr "Échec de la création de l'espace de travail."
+
+msgid "failed_list_workspaces"
+msgstr "Échec de la liste des espaces de travail."
+
+msgid "failed_get_workspace"
+msgstr "Échec de la récupération de l'espace de travail."
+
+msgid "failed_update_workspace"
+msgstr "Échec de la mise à jour de l'espace de travail."
+
+msgid "failed_delete_workspace"
+msgstr "Échec de la suppression de l'espace de travail."
+
+msgid "workspace_not_found"
+msgstr "Espace de travail introuvable."
+
+msgid "workspace_forbidden"
+msgstr "Vous n'avez pas le droit de modifier cet espace de travail."
+
+msgid "workspace_deleted_successfully"
+msgstr "Espace de travail supprimé avec succès."
+
+msgid "failed_create_access_key"
+msgstr "Échec de la création de la clé d'accès."
+
+msgid "failed_list_access_keys"
+msgstr "Échec de la récupération des clés d'accès."
+
+msgid "failed_get_access_key"
+msgstr "Échec de la récupération de la clé d'accès."
+
+msgid "failed_delete_access_key"
+msgstr "Échec de la révocation de la clé d'accès."
+
+msgid "access_key_not_found"
+msgstr "Clé d'accès introuvable."
+
+msgid "invalid_access_key"
+msgstr "Clé d'accès invalide."
+
+msgid "failed_list_workspace_members"
+msgstr "Échec de la récupération des membres de l'espace de travail."
+
+msgid "failed_update_workspace_member"
+msgstr "Échec de la mise à jour du membre de l'espace de travail."
+
+msgid "failed_remove_workspace_member"
+msgstr "Échec de la suppression du membre de l'espace de travail."
+
+msgid "workspace_member_not_found"
+msgstr "Membre de l'espace de travail introuvable."
+
+msgid "workspace_owner_protected"
+msgstr "Le propriétaire de l'espace de travail ne peut pas être modifié ni retiré."
+
+msgid "failed_create_invite"
+msgstr "Échec de l'envoi de l'invitation."
+
+msgid "failed_list_invites"
+msgstr "Échec de la récupération des invitations."
+
+msgid "failed_get_invite"
+msgstr "Échec de la récupération de l'invitation."
+
+msgid "failed_delete_invite"
+msgstr "Échec de l'annulation de l'invitation."
+
+msgid "invite_not_found"
+msgstr "Invitation introuvable."
+
+msgid "pending_invite_already_exists"
+msgstr "Une invitation en attente existe déjà pour cette adresse e-mail."
+
+msgid "user_already_workspace_member"
+msgstr "Cet utilisateur est déjà membre de l'espace de travail."
+
+msgid "failed_check_access"
+msgstr "Impossible de vérifier l'accès."
+
+msgid "failed_load_workspace"
+msgstr "Impossible de charger l'espace de travail."
+
+msgid "invalid_route_configuration"
+msgstr "Configuration de route invalide."
