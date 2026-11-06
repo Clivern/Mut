@@ -3,7 +3,7 @@ module github.com/clivern/mut
 go 1.27.3
 
 require (
-	github.com/OpenRouterTeam/go-sdk v0.9.75
+	github.com/OpenRouterTeam/go-sdk v0.9.116
 	github.com/drone/envsubst v1.0.3
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-chi/httprate v0.16.1
@@ -80,7 +80,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/spyzhov/ajson v0.8.0 // indirect
+	github.com/spyzhov/ajson v0.9.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
