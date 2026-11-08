@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mut
+description: Mut, an AI powered Kubernetes operator for anomaly detection and resource optimization
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
