@@ -1,0 +1,19 @@
+# Non-secret settings for this install. Copy this file and change the values.
+
+publicUrl: https://mut.example.com
+# Leave empty to skip the Ingress.
+ingressHost: mut.example.com
+
+database:
+  host: postgres.example.internal
+  port: 5432
+  name: mut
+  user: postgres
+
+oauth:
+  MUT_OAUTH_GITHUB_CLIENT_ID: "your-github-client-id"
+  MUT_OAUTH_GOOGLE_CLIENT_ID: ""
+
+# Leave empty to run NATS in this release.
+nats:
+  url: ""

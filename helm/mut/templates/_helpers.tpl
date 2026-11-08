@@ -19,19 +19,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "mut.secretName" -}}
-{{- if .Values.secrets.existingSecret -}}
-{{- .Values.secrets.existingSecret -}}
-{{- else -}}
 {{- printf "%s-secrets" (include "mut.fullname" .) -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "mut.dbSecretName" -}}
-{{- if .Values.database.existingSecret -}}
-{{- .Values.database.existingSecret -}}
-{{- else -}}
-{{- include "mut.secretName" . -}}
-{{- end -}}
 {{- end -}}
 
 {{- define "mut.natsUrl" -}}
@@ -53,11 +41,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   value: {{ .Values.database.name | quote }}
 - name: MUT_DATABASE_USERNAME
   value: {{ .Values.database.user | quote }}
-- name: MUT_DATABASE_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "mut.dbSecretName" . }}
-      key: MUT_DATABASE_PASSWORD
 - name: MUT_BROKER_PROVIDER
   value: nats
 - name: MUT_BROKER_URL
@@ -76,13 +59,15 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   value: info
 - name: MUT_SERVER_LOG_FORMAT
   value: json
+{{- range $key, $value := .Values.oauth }}
+- name: {{ $key }}
+  value: {{ $value | quote }}
+{{- end }}
 {{- range $key, $value := .Values.secrets }}
-{{- if ne $key "existingSecret" }}
 - name: {{ $key }}
   valueFrom:
     secretKeyRef:
       name: {{ include "mut.secretName" $ }}
       key: {{ $key }}
-{{- end }}
 {{- end }}
 {{- end -}}

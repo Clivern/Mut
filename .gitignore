@@ -28,3 +28,6 @@ coverage.html
 ngrok.yml
 .vscode
 .DS_Store
+
+# Real Helm secrets, copied from helm/mut/examples/secrets.example.yaml
+helm/**/secrets.yaml

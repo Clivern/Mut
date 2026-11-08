@@ -17,20 +17,22 @@ database:
   port: 5432
   name: mut
   user: postgres
-  # Used only when existingSecret is empty. The secret must hold MUT_DATABASE_PASSWORD.
-  password: ""
-  existingSecret: ""
 
 # NATS server. Empty deploys NATS in this release, otherwise use this URL.
 nats:
   url: ""
 
-# Secret values, keyed by env var name. Ignored when existingSecret is set,
-# and that secret must hold the same keys.
+# OAuth client IDs. The client secrets go in secrets below.
+oauth:
+  MUT_OAUTH_GITHUB_CLIENT_ID: ""
+  MUT_OAUTH_GOOGLE_CLIENT_ID: ""
+
+# Secret values, keyed by env var name. The chart stores them in one Secret.
+# Keep this file out of git, or pass values with --set-file.
 secrets:
-  existingSecret: ""
+  MUT_DATABASE_PASSWORD: ""
   MUT_ENCRYPTION_KEY: ""
-  MUT_SERVER_PROM_METRICS_SECRET: secret
+  MUT_SERVER_PROM_METRICS_SECRET: ""
   MUT_AI_API_KEY: ""
   MUT_RESEND_API_KEY: ""
   MUT_OAUTH_GITHUB_CLIENT_SECRET: ""
