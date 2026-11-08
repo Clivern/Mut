@@ -1,6 +1,6 @@
 Mut is installed as {{ include "mut.fullname" . }}.
 
-Open {{ .Values.server.publicUrl }} once the server pod is ready.
+Open {{ .Values.publicUrl }} once the server pod is ready.
 
 Check the migration job first:
   kubectl logs job/{{ include "mut.fullname" . }}-migrate

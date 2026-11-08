@@ -1,59 +1,37 @@
-# Image used by the server, worker and migration job.
-image:
-  repository: clivern/mut
-  # Defaults to the chart appVersion when empty.
-  tag: ""
-  pullPolicy: IfNotPresent
+# Container image. The tag defaults to the chart appVersion.
+image: clivern/mut
+tag: ""
 
-server:
-  replicas: 1
-  # Public URL users reach Mut at, used in links and OAuth callbacks (MUT_SERVER_URL).
-  publicUrl: https://mut.example.com
-  port: 8000
-  resources: {}
-  ingress:
-    enabled: false
-    className: ""
-    host: mut.example.com
-    annotations: {}
+# Public URL of Mut, used in links and OAuth callbacks.
+publicUrl: https://mut.example.com
+# Set to expose the server through an Ingress on this host.
+ingressHost: ""
 
-worker:
-  replicas: 1
-  resources: {}
+replicas:
+  server: 1
+  worker: 1
 
 # External PostgreSQL. Required.
-postgres:
+database:
   host: ""
   port: 5432
-  database: mut
-  username: postgres
-  # Used only when existingSecret is empty. The chart then creates the secret.
+  name: mut
+  user: postgres
+  # Used only when existingSecret is empty. The secret must hold MUT_DATABASE_PASSWORD.
   password: ""
-  # Existing secret holding the database password under existingSecretKey.
   existingSecret: ""
-  existingSecretKey: MUT_DATABASE_PASSWORD
 
-# NATS message bus used by the server and the worker.
+# NATS server. Empty deploys NATS in this release, otherwise use this URL.
 nats:
-  # Deploy a NATS server in this release. When false, set url.
-  enabled: true
   url: ""
-  image: nats:2.10-alpine
-  queue: mut
 
-# Secret values. Leave existingSecret empty to let the chart create the secret.
-# An existing secret must contain every key listed in templates/secret.yaml.
+# Secret values, keyed by env var name. Ignored when existingSecret is set,
+# and that secret must hold the same keys.
 secrets:
   existingSecret: ""
-  encryptionKey: ""
-  metricsSecret: secret
-  aiApiKey: ""
-  resendApiKey: ""
-  githubClientSecret: ""
-  googleClientSecret: ""
-
-# Extra non-secret MUT_* environment variables.
-config:
-  MUT_SERVER_MODE: prod
-  MUT_SERVER_LOG_LEVEL: info
-  MUT_SERVER_LOG_FORMAT: json
+  MUT_ENCRYPTION_KEY: ""
+  MUT_SERVER_PROM_METRICS_SECRET: secret
+  MUT_AI_API_KEY: ""
+  MUT_RESEND_API_KEY: ""
+  MUT_OAUTH_GITHUB_CLIENT_SECRET: ""
+  MUT_OAUTH_GOOGLE_CLIENT_SECRET: ""

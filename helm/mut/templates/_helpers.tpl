@@ -15,7 +15,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "mut.image" -}}
-{{- printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) -}}
+{{- printf "%s:%s" .Values.image (.Values.tag | default .Chart.AppVersion) -}}
 {{- end -}}
 
 {{- define "mut.secretName" -}}
@@ -27,18 +27,18 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "mut.dbSecretName" -}}
-{{- if .Values.postgres.existingSecret -}}
-{{- .Values.postgres.existingSecret -}}
+{{- if .Values.database.existingSecret -}}
+{{- .Values.database.existingSecret -}}
 {{- else -}}
 {{- include "mut.secretName" . -}}
 {{- end -}}
 {{- end -}}
 
 {{- define "mut.natsUrl" -}}
-{{- if .Values.nats.enabled -}}
-{{- printf "nats://%s-nats:4222" (include "mut.fullname" .) -}}
-{{- else -}}
+{{- if .Values.nats.url -}}
 {{- .Values.nats.url -}}
+{{- else -}}
+{{- printf "nats://%s-nats:4222" (include "mut.fullname" .) -}}
 {{- end -}}
 {{- end -}}
 
@@ -46,62 +46,43 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 - name: MUT_DATABASE_DRIVER
   value: postgres
 - name: MUT_DATABASE_HOST
-  value: {{ required "postgres.host is required" .Values.postgres.host | quote }}
+  value: {{ required "database.host is required" .Values.database.host | quote }}
 - name: MUT_DATABASE_PORT
-  value: {{ .Values.postgres.port | quote }}
+  value: {{ .Values.database.port | quote }}
 - name: MUT_DATABASE_NAME
-  value: {{ .Values.postgres.database | quote }}
+  value: {{ .Values.database.name | quote }}
 - name: MUT_DATABASE_USERNAME
-  value: {{ .Values.postgres.username | quote }}
+  value: {{ .Values.database.user | quote }}
 - name: MUT_DATABASE_PASSWORD
   valueFrom:
     secretKeyRef:
       name: {{ include "mut.dbSecretName" . }}
-      key: {{ ternary .Values.postgres.existingSecretKey "MUT_DATABASE_PASSWORD" (ne .Values.postgres.existingSecret "") }}
+      key: MUT_DATABASE_PASSWORD
 - name: MUT_BROKER_PROVIDER
   value: nats
 - name: MUT_BROKER_URL
   value: {{ include "mut.natsUrl" . | quote }}
 - name: MUT_BROKER_QUEUE
-  value: {{ .Values.nats.queue | quote }}
+  value: mut
 - name: MUT_BROKER_NAME
   value: mut
 - name: MUT_SERVER_URL
-  value: {{ .Values.server.publicUrl | quote }}
+  value: {{ .Values.publicUrl | quote }}
 - name: MUT_SERVER_PORT
-  value: {{ .Values.server.port | quote }}
-- name: MUT_ENCRYPTION_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "mut.secretName" . }}
-      key: MUT_ENCRYPTION_KEY
-- name: MUT_SERVER_PROM_METRICS_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "mut.secretName" . }}
-      key: MUT_SERVER_PROM_METRICS_SECRET
-- name: MUT_AI_API_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "mut.secretName" . }}
-      key: MUT_AI_API_KEY
-- name: MUT_RESEND_API_KEY
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "mut.secretName" . }}
-      key: MUT_RESEND_API_KEY
-- name: MUT_OAUTH_GITHUB_CLIENT_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "mut.secretName" . }}
-      key: MUT_OAUTH_GITHUB_CLIENT_SECRET
-- name: MUT_OAUTH_GOOGLE_CLIENT_SECRET
-  valueFrom:
-    secretKeyRef:
-      name: {{ include "mut.secretName" . }}
-      key: MUT_OAUTH_GOOGLE_CLIENT_SECRET
-{{- range $key, $value := .Values.config }}
+  value: "8000"
+- name: MUT_SERVER_MODE
+  value: prod
+- name: MUT_SERVER_LOG_LEVEL
+  value: info
+- name: MUT_SERVER_LOG_FORMAT
+  value: json
+{{- range $key, $value := .Values.secrets }}
+{{- if ne $key "existingSecret" }}
 - name: {{ $key }}
-  value: {{ $value | quote }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "mut.secretName" $ }}
+      key: {{ $key }}
+{{- end }}
 {{- end }}
 {{- end -}}

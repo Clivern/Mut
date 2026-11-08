@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "mut.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.worker.replicas }}
+  replicas: {{ .Values.replicas.worker }}
   selector:
     matchLabels:
       {{- include "mut.selectorLabels" . | nindent 6 }}
@@ -19,9 +19,6 @@ spec:
       containers:
         - name: worker
           image: {{ include "mut.image" . }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: ["worker", "-c", "/app/configs/config.dist.yml"]
           env:
             {{- include "mut.env" . | nindent 12 }}
-          resources:
-            {{- toYaml .Values.worker.resources | nindent 12 }}

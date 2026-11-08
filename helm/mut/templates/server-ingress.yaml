@@ -1,20 +1,13 @@
-{{- if .Values.server.ingress.enabled }}
+{{- if .Values.ingressHost }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "mut.fullname" . }}-server
   labels:
     {{- include "mut.labels" . | nindent 4 }}
-  {{- with .Values.server.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
 spec:
-  {{- with .Values.server.ingress.className }}
-  ingressClassName: {{ . }}
-  {{- end }}
   rules:
-    - host: {{ .Values.server.ingress.host | quote }}
+    - host: {{ .Values.ingressHost | quote }}
       http:
         paths:
           - path: /

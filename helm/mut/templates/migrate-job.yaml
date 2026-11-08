@@ -20,7 +20,6 @@ spec:
       containers:
         - name: migrate
           image: {{ include "mut.image" . }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: ["migrate", "up", "-c", "/app/configs/config.dist.yml"]
           env:
             {{- include "mut.env" . | nindent 12 }}
