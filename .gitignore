@@ -26,3 +26,5 @@ coverage.html
 # Binary
 /mut
 ngrok.yml
+.vscode
+.DS_Store
